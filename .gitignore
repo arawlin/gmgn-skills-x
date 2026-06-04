@@ -18,3 +18,5 @@ dist
 
 # Internal / testing (not for public release)
 testing/
+
+.github/skills
