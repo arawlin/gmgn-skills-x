@@ -1,6 +1,7 @@
 ---
 name: gmgn-market-opportunities
 description: 'Orchestrate a GMGN market opportunity discovery workflow from trending data: fetch a broad safe-filtered pool -> rank tokens with multi-factor analysis -> present top picks with rationale -> suggest deep dive or swap follow-ups. Delegates CLI execution to the gmgn-market skill. Use when asked what tokens are worth watching from trending data, which hot tokens have the best composite profile, or to discover opportunities from Solana, BSC, Base, or Ethereum trending feeds. Requires: gmgn-cli, GMGN_API_KEY, and gmgn-market installed.'
+argument-hint: "[--chain <sol|bsc|base|eth>] [--interval <1m|5m|1h|6h|24h>] [--pool-size <number>] [--top <number>]"
 metadata: {"openclaw": {"requires": {"bins": ["gmgn-cli"], "env": ["GMGN_API_KEY"]}, "primaryEnv": "GMGN_API_KEY"}}
 ---
 

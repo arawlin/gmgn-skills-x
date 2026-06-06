@@ -1,6 +1,7 @@
 ---
 name: gmgn-wallet-analysis
 description: 'Orchestrate a GMGN wallet analysis workflow for a specific wallet: current holdings -> 30d stats -> recent activity -> optional follow-wallet trade feed -> verdict. Delegates CLI execution to gmgn-portfolio and gmgn-track skills. Use when asked whether a wallet is worth following, what its investment style is, or how strong its track record looks. Requires: gmgn-cli, GMGN_API_KEY, and the referenced skills installed. Some steps require GMGN_PRIVATE_KEY.'
+argument-hint: "--wallet <wallet_address> [--chain <sol|bsc|base|eth>] [--period <7d|30d>] [--holdings-limit <number>] [--top-holdings <number>]"
 metadata: {"openclaw": {"requires": {"bins": ["gmgn-cli"], "env": ["GMGN_API_KEY"]}, "primaryEnv": "GMGN_API_KEY"}}
 ---
 

@@ -1,6 +1,7 @@
 ---
 name: gmgn-token-research
 description: 'Orchestrate a full GMGN token research workflow for a token: basic info -> security -> liquidity pool -> market heat -> smart money signals -> structured buy, watch, or skip verdict. Delegates CLI execution to gmgn-token and gmgn-market skills. Use when asked whether a token is worth researching or buying, or when the user wants a full due diligence flow instead of a quick checklist. Requires: gmgn-cli, GMGN_API_KEY, and the referenced skills installed.'
+argument-hint: "--address <token_address> [--chain <sol|bsc|base|eth>] [--trending-interval <1m|5m|1h|6h|24h>]"
 metadata: {"openclaw": {"requires": {"bins": ["gmgn-cli"], "env": ["GMGN_API_KEY"]}, "primaryEnv": "GMGN_API_KEY"}}
 ---
 

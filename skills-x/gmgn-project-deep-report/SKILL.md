@@ -1,6 +1,7 @@
 ---
 name: gmgn-project-deep-report
 description: 'Orchestrate a comprehensive GMGN project deep report for a token: fundamentals -> security -> liquidity -> smart money conviction -> price action -> scored verdict. Delegates CLI execution to gmgn-token and gmgn-market skills. Use when asked for a deep report, full project analysis, complete investment research, or whether a token is worth a large position. Requires: gmgn-cli, GMGN_API_KEY, and the referenced skills installed.'
+argument-hint: "--address <token_address> [--chain <sol|bsc|base|eth>] [--kline-resolution <1m|5m|15m|1h|4h|1d>] [--trending-interval <1m|5m|1h|6h|24h>]"
 metadata: {"openclaw": {"requires": {"bins": ["gmgn-cli"], "env": ["GMGN_API_KEY"]}, "primaryEnv": "GMGN_API_KEY"}}
 ---
 

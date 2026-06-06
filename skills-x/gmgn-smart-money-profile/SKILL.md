@@ -1,6 +1,7 @@
 ---
 name: gmgn-smart-money-profile
 description: 'Orchestrate a GMGN smart money profile workflow for a wallet: compare 7d and 30d stats -> infer trading style from activity -> estimate take-profit and stop-loss behavior -> approximate copy-trade ROI -> optionally rank multiple wallets in a leaderboard. Delegates CLI execution to gmgn-portfolio and gmgn-track skills. Use when asked what a wallet''s trading style is, when it takes profit or cuts losses, whether copying it would have worked, or which smart money wallets are best to follow. Requires: gmgn-cli, GMGN_API_KEY, and the referenced skills installed.'
+argument-hint: "--wallet <wallet_address> [--chain <sol|bsc|base|eth>] [--activity-limit <number>] [--leaderboard-period <7d|30d>]"
 metadata: {"openclaw": {"requires": {"bins": ["gmgn-cli"], "env": ["GMGN_API_KEY"]}, "primaryEnv": "GMGN_API_KEY"}}
 ---
 

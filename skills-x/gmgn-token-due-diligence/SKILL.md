@@ -1,6 +1,7 @@
 ---
 name: gmgn-token-due-diligence
 description: 'Orchestrate a fast GMGN token due diligence checklist before buying: basic info -> security review -> liquidity pool check -> smart money signals -> concise buy or avoid verdict. Delegates CLI execution to the gmgn-token skill. Use when the user wants a quick pre-buy or pre-swap safety check rather than a full research report. Requires: gmgn-cli, GMGN_API_KEY, and gmgn-token installed.'
+argument-hint: "--address <token_address> [--chain <sol|bsc|base|eth>]"
 metadata: {"openclaw": {"requires": {"bins": ["gmgn-cli"], "env": ["GMGN_API_KEY"]}, "primaryEnv": "GMGN_API_KEY"}}
 ---
 

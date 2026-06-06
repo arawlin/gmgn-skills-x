@@ -1,6 +1,7 @@
 ---
 name: gmgn-early-project-screening
 description: 'Orchestrate a GMGN early project screening workflow for newly launched launchpad tokens: trenches fetch -> first-pass filter -> security checks -> smart money entry check -> verdicts. Delegates CLI execution to gmgn-market and gmgn-token skills. Use when asked which new tokens are worth watching, whether smart money entered early, or to screen Pump.fun and other launchpad tokens before full due diligence. Requires: gmgn-cli, GMGN_API_KEY, and the two referenced skills installed.'
+argument-hint: "[--chain <sol|bsc|base|eth>] [--type <new_creation|near_completion|completed>...] [--filter-preset <safe|strict|none>] [--max-candidates <number>]"
 metadata: {"openclaw": {"requires": {"bins": ["gmgn-cli"], "env": ["GMGN_API_KEY"]}, "primaryEnv": "GMGN_API_KEY"}}
 ---
 

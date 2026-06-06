@@ -1,6 +1,7 @@
 ---
 name: gmgn-daily-brief
 description: 'Orchestrate a structured GMGN daily market brief: market pulse → smart money moves → new token watch → risk scan. Delegates CLI execution to gmgn-market, gmgn-track, and gmgn-token skills. Requires: gmgn-cli, GMGN_API_KEY, and the three referenced skills installed.'
+argument-hint: "[--chain <sol|bsc|base|eth>]"
 metadata: {"openclaw": {"requires": {"bins": ["gmgn-cli"], "env": ["GMGN_API_KEY"]}, "primaryEnv": "GMGN_API_KEY"}}
 ---
 
