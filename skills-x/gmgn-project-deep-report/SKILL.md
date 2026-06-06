@@ -183,5 +183,3 @@ This skill requires the following companion skills to be installed and eligible:
 
 Optional downstream follow-up skills:
 - **gmgn-swap** — execution after explicit user confirmation
-
-Install via `openclaw skills install` or symlink them from the gmgn-skills repo.

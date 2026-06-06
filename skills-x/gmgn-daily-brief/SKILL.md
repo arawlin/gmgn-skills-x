@@ -92,5 +92,3 @@ This skill requires the following companion skills to be installed and eligible:
 - **gmgn-market** — trending, trenches commands + field knowledge
 - **gmgn-track** — smartmoney, kol commands + field knowledge
 - **gmgn-token** — security command + field knowledge
-
-Install via `openclaw skills install` or symlink them from the gmgn-skills repo.

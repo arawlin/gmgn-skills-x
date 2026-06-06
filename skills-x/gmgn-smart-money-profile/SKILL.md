@@ -129,5 +129,3 @@ VERDICT
 This skill requires the following companion skills to be installed and eligible:
 - **gmgn-portfolio** — stats, activity, holdings, and wallet field knowledge
 - **gmgn-track** — smart money discovery for leaderboard comparison
-
-Install via `openclaw skills install` or symlink them from the gmgn-skills repo.

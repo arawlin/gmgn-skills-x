@@ -143,5 +143,3 @@ This skill requires the following companion skills to be installed and eligible:
 - **gmgn-token** — security, pool, holders, and field knowledge
 - **gmgn-track** — smart money flow monitoring and direction signals
 - **gmgn-market** — kline-based volume and price anomaly context
-
-Install via `openclaw skills install` or symlink them from the gmgn-skills repo.

@@ -136,5 +136,3 @@ This skill requires the following companion skill to be installed and eligible:
 Optional downstream follow-up skills:
 - **gmgn-swap** — execution after explicit user confirmation
 - **gmgn-project-deep-report** — deeper multi-factor analysis if the user wants a larger position decision
-
-Install via `openclaw skills install` or symlink them from the gmgn-skills repo.

@@ -124,5 +124,3 @@ Reason: {1-2 sentence justification}
 This skill requires the following companion skills to be installed and eligible:
 - **gmgn-portfolio** — holdings, stats, activity, and field knowledge
 - **gmgn-track** — optional follow-wallet feed and signed-auth nuances
-
-Install via `openclaw skills install` or symlink them from the gmgn-skills repo.
