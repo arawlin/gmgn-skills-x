@@ -84,11 +84,20 @@ Before rendering the wallet analysis:
 - Always display the full on-chain wallet address for the analyzed wallet and the full on-chain token address for referenced holdings.
 - Wallet labels, person names, token symbols, or token names may be shown only as secondary context after the full address.
 - Never shorten any address with `...` or any other ellipsis form.
+- Always include an `INPUT PARAMETERS` section that echoes the effective value of every declared input parameter.
+- If the user omitted a parameter, still show the final default value that the skill used.
 
 ```
 ═══════════════════════════════════════════
   WALLET ANALYSIS — {wallet_address} — {chain}
 ═══════════════════════════════════════════
+
+─── INPUT PARAMETERS ─────────────────────
+  Chain (--chain): {chain}
+  Wallet (--wallet): {wallet_address}
+  Period (--period): {period}
+  Holdings Limit (--holdings-limit): {holdings_limit}
+  Top Holdings (--top-holdings): {top_holdings}
 
 Period: {period}
 Wallet Label: {wallet_label_if_any}

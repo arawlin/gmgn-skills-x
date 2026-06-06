@@ -97,12 +97,19 @@ Before rendering the warning report:
 - Always display the full on-chain token address whenever the token is referenced.
 - Symbols or token names may be shown only as secondary context after the full address.
 - Never shorten any address with `...` or any other ellipsis form.
+- Always include an `INPUT PARAMETERS` section that echoes the effective value of every declared input parameter.
+- If the user omitted a parameter, still show the final default value that the skill used.
 
 ```
 ═══════════════════════════════════════════
   RISK WARNING — {address} ({symbol})
   {chain} | {timestamp}
 ═══════════════════════════════════════════
+
+─── INPUT PARAMETERS ─────────────────────
+  Chain (--chain): {chain}
+  Address (--address): {address}
+  Kline Resolution (--kline-resolution): {kline_resolution}
 
 SECURITY
 - Honeypot: Yes / No

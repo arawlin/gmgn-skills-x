@@ -98,11 +98,19 @@ Before rendering the screening report:
 - Always display the full on-chain token address for every candidate, shortlist entry, and final recommendation.
 - Symbols or token names may be shown only as secondary context next to the full address.
 - Never shorten any address with `...` or any other ellipsis form.
+- Always include an `INPUT PARAMETERS` section that echoes the effective value of every declared input parameter.
+- If the user omitted a parameter, still show the final default value that the skill used.
 
 ```
 ═══════════════════════════════════════════
   EARLY PROJECT SCREENING — {chain} — {date}
 ═══════════════════════════════════════════
+
+─── INPUT PARAMETERS ─────────────────────
+  Chain (--chain): {chain}
+  Type (--type): {type_values}
+  Filter Preset (--filter-preset): {filter_preset}
+  Max Candidates (--max-candidates): {max_candidates}
 
 Screened: {N} tokens from trenches -> {M} shortlisted -> {K} passed security
 

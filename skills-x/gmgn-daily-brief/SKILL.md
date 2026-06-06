@@ -52,11 +52,16 @@ Before rendering the brief:
 - Always display the full on-chain token or wallet address for every referenced asset or wallet.
 - Symbols, token names, and wallet labels are optional secondary context only and must never replace the full address.
 - Never shorten any address with `...` or any other ellipsis form.
+- Always include an `INPUT PARAMETERS` section that echoes the effective value of every declared input parameter.
+- If the user omitted a parameter, still show the final default value that the skill used.
 
 ```
 ═══════════════════════════════════════════
   DAILY MARKET BRIEF — {chain} — {date}
 ═══════════════════════════════════════════
+
+─── INPUT PARAMETERS ─────────────────────
+  Chain (--chain): {chain}
 
 📊 MARKET PULSE
   Phase:        Risk-on / Risk-off / Mixed

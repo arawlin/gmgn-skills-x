@@ -89,12 +89,20 @@ Before rendering the profile:
 - Always display the full on-chain wallet address for the profiled wallet and for any compared wallets in leaderboard mode.
 - Wallet labels, ENS-style names, or person names may be shown only as secondary context after the full address.
 - Never shorten any address with `...` or any other ellipsis form.
+- Always include an `INPUT PARAMETERS` section that echoes the effective value of every declared input parameter.
+- If the user omitted a parameter, still show the final default value that the skill used.
 
 ```
 ═══════════════════════════════════════════
   SMART MONEY PROFILE — {wallet_address}
   {chain} | Data: 7d + 30d | Wallet Label: {wallet_label_if_any}
 ═══════════════════════════════════════════
+
+─── INPUT PARAMETERS ─────────────────────
+  Chain (--chain): {chain}
+  Wallet (--wallet): {wallet_address}
+  Activity Limit (--activity-limit): {activity_limit}
+  Leaderboard Period (--leaderboard-period): {leaderboard_period}
 
 PERFORMANCE
 - Win Rate (7d / 30d): {x}% / {y}%

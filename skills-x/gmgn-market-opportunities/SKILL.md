@@ -78,11 +78,19 @@ Before rendering the opportunities report:
 - Always display the full on-chain token address for every selected token.
 - Symbols or token names may be shown only as secondary context next to the full address.
 - Never shorten any address with `...` or any other ellipsis form.
+- Always include an `INPUT PARAMETERS` section that echoes the effective value of every declared input parameter.
+- If the user omitted a parameter, still show the final default value that the skill used.
 
 ```
 ═══════════════════════════════════════════
   MARKET OPPORTUNITIES — {chain} / {interval}
 ═══════════════════════════════════════════
+
+─── INPUT PARAMETERS ─────────────────────
+  Chain (--chain): {chain}
+  Interval (--interval): {interval}
+  Pool Size (--pool-size): {pool_size}
+  Top (--top): {top}
 
 Screened: {pool_size} trending tokens
 Selected: {top} composite picks
