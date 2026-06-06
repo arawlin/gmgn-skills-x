@@ -2,7 +2,6 @@
 name: gmgn-risk-warning
 description: 'Orchestrate a GMGN risk warning workflow for a held or watched token: security snapshot -> liquidity check -> whale holder analysis -> smart money flow -> price and volume anomaly check -> structured risk verdict. Delegates CLI execution to gmgn-token, gmgn-track, and gmgn-market skills. Use when asked whether whales are dumping, whether liquidity is still healthy, whether the developer may be exiting, or whether a position is becoming dangerous to hold. Requires: gmgn-cli, GMGN_API_KEY, and the referenced skills installed.'
 argument-hint: "--address <token_address> [--chain <sol|bsc|base|eth>] [--kline-resolution <1m|5m|15m|1h|4h|1d>]"
-metadata: {"openclaw": {"requires": {"bins": ["gmgn-cli"], "env": ["GMGN_API_KEY"]}, "primaryEnv": "GMGN_API_KEY"}}
 ---
 
 # GMGN Risk Warning
@@ -94,9 +93,14 @@ If a honeypot or equivalent hard-stop condition appears, say so directly and do 
 
 ## Output Format
 
+Before rendering the warning report:
+- Always display the full on-chain token address whenever the token is referenced.
+- Symbols or token names may be shown only as secondary context after the full address.
+- Never shorten any address with `...` or any other ellipsis form.
+
 ```
 ═══════════════════════════════════════════
-  RISK WARNING — {symbol} ({short_address})
+  RISK WARNING — {address} ({symbol})
   {chain} | {timestamp}
 ═══════════════════════════════════════════
 

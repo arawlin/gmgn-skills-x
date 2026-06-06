@@ -2,7 +2,6 @@
 name: gmgn-project-deep-report
 description: 'Orchestrate a comprehensive GMGN project deep report for a token: fundamentals -> security -> liquidity -> smart money conviction -> price action -> scored verdict. Delegates CLI execution to gmgn-token and gmgn-market skills. Use when asked for a deep report, full project analysis, complete investment research, or whether a token is worth a large position. Requires: gmgn-cli, GMGN_API_KEY, and the referenced skills installed.'
 argument-hint: "--address <token_address> [--chain <sol|bsc|base|eth>] [--kline-resolution <1m|5m|15m|1h|4h|1d>] [--trending-interval <1m|5m|1h|6h|24h>]"
-metadata: {"openclaw": {"requires": {"bins": ["gmgn-cli"], "env": ["GMGN_API_KEY"]}, "primaryEnv": "GMGN_API_KEY"}}
 ---
 
 # GMGN Project Deep Report
@@ -119,10 +118,15 @@ If a hard stop is triggered, stop optimizing the narrative and say so directly.
 
 ## Output Format
 
+Before rendering the report:
+- Always display the full on-chain token address whenever the token is referenced.
+- Symbols or token names may be shown only as secondary context after the full address.
+- Never shorten any address with `...` or any other ellipsis form.
+
 ```
 ═══════════════════════════════════════════
-  PROJECT DEEP REPORT — {symbol}
-  {chain} | {short_address} | {date}
+  PROJECT DEEP REPORT — {address}
+  {chain} | Symbol: {symbol} | {date}
 ═══════════════════════════════════════════
 
 FUNDAMENTALS

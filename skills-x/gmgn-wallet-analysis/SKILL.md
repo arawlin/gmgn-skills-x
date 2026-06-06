@@ -2,7 +2,6 @@
 name: gmgn-wallet-analysis
 description: 'Orchestrate a GMGN wallet analysis workflow for a specific wallet: current holdings -> 30d stats -> recent activity -> optional follow-wallet trade feed -> verdict. Delegates CLI execution to gmgn-portfolio and gmgn-track skills. Use when asked whether a wallet is worth following, what its investment style is, or how strong its track record looks. Requires: gmgn-cli, GMGN_API_KEY, and the referenced skills installed. Some steps require GMGN_PRIVATE_KEY.'
 argument-hint: "--wallet <wallet_address> [--chain <sol|bsc|base|eth>] [--period <7d|30d>] [--holdings-limit <number>] [--top-holdings <number>]"
-metadata: {"openclaw": {"requires": {"bins": ["gmgn-cli"], "env": ["GMGN_API_KEY"]}, "primaryEnv": "GMGN_API_KEY"}}
 ---
 
 # GMGN Wallet Analysis
@@ -81,12 +80,18 @@ Call out uncertainty explicitly when data is partial.
 
 ## Output Format
 
+Before rendering the wallet analysis:
+- Always display the full on-chain wallet address for the analyzed wallet and the full on-chain token address for referenced holdings.
+- Wallet labels, person names, token symbols, or token names may be shown only as secondary context after the full address.
+- Never shorten any address with `...` or any other ellipsis form.
+
 ```
 ═══════════════════════════════════════════
-  WALLET ANALYSIS — {short_wallet} — {chain}
+  WALLET ANALYSIS — {wallet_address} — {chain}
 ═══════════════════════════════════════════
 
 Period: {period}
+Wallet Label: {wallet_label_if_any}
 
 ─── PERFORMANCE ──────────────────────────
 Win Rate:       {winrate}%
@@ -100,7 +105,7 @@ Token Focus:    Meme / DeFi / Mixed / Specific sector
 Sizing Pattern: Consistent / Mixed / Erratic
 
 ─── CURRENT POSITIONS ────────────────────
-Top holdings:   {token1}, {token2}, {token3}
+Top holdings:   {token1_address} ({token1_symbol}), {token2_address} ({token2_symbol}), {token3_address} ({token3_symbol})
 Open P&L:       ${total_unrealized}
 Concentration:  High / Medium / Low
 

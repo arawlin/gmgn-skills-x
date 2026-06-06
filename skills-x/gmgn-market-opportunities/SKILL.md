@@ -2,7 +2,6 @@
 name: gmgn-market-opportunities
 description: 'Orchestrate a GMGN market opportunity discovery workflow from trending data: fetch a broad safe-filtered pool -> rank tokens with multi-factor analysis -> present top picks with rationale -> suggest deep dive or swap follow-ups. Delegates CLI execution to the gmgn-market skill. Use when asked what tokens are worth watching from trending data, which hot tokens have the best composite profile, or to discover opportunities from Solana, BSC, Base, or Ethereum trending feeds. Requires: gmgn-cli, GMGN_API_KEY, and gmgn-market installed.'
 argument-hint: "[--chain <sol|bsc|base|eth>] [--interval <1m|5m|1h|6h|24h>] [--pool-size <number>] [--top <number>]"
-metadata: {"openclaw": {"requires": {"bins": ["gmgn-cli"], "env": ["GMGN_API_KEY"]}, "primaryEnv": "GMGN_API_KEY"}}
 ---
 
 # GMGN Market Opportunities
@@ -75,6 +74,11 @@ For any surfaced token:
 
 ## Output Format
 
+Before rendering the opportunities report:
+- Always display the full on-chain token address for every selected token.
+- Symbols or token names may be shown only as secondary context next to the full address.
+- Never shorten any address with `...` or any other ellipsis form.
+
 ```
 ═══════════════════════════════════════════
   MARKET OPPORTUNITIES — {chain} / {interval}
@@ -83,13 +87,13 @@ For any surfaced token:
 Screened: {pool_size} trending tokens
 Selected: {top} composite picks
 
-# | Symbol | Address | Smart Degens | Volume | {interval} Chg | Rationale
-1 | ...    | ...     | ...          | ...    | ...            | Smart money accumulating + strong real volume
-2 | ...    | ...     | ...          | ...    | ...            | ...
+# | Address | Symbol | Smart Degens | Volume | {interval} Chg | Rationale
+1 | {token_1_address} | {token_1_symbol} | {smart_degen_count_1} | {volume_1} | {change_1} | Smart money accumulating + strong real volume
+2 | {token_2_address} | {token_2_symbol} | {smart_degen_count_2} | {volume_2} | {change_2} | Momentum improving + liquidity quality holds
 
 ─── NEXT ACTIONS ─────────────────────────
-- Deep dive: run token research on the strongest pick
-- Trade: only if the user accepts trending-only conviction
+- Deep dive: run token research on {top_pick_address} ({top_pick_symbol})
+- Trade: only if the user accepts trending-only conviction for {top_pick_address}
 ═══════════════════════════════════════════
 ```
 

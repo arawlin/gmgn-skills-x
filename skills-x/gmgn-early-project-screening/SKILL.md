@@ -2,7 +2,6 @@
 name: gmgn-early-project-screening
 description: 'Orchestrate a GMGN early project screening workflow for newly launched launchpad tokens: trenches fetch -> first-pass filter -> security checks -> smart money entry check -> verdicts. Delegates CLI execution to gmgn-market and gmgn-token skills. Use when asked which new tokens are worth watching, whether smart money entered early, or to screen Pump.fun and other launchpad tokens before full due diligence. Requires: gmgn-cli, GMGN_API_KEY, and the two referenced skills installed.'
 argument-hint: "[--chain <sol|bsc|base|eth>] [--type <new_creation|near_completion|completed>...] [--filter-preset <safe|strict|none>] [--max-candidates <number>]"
-metadata: {"openclaw": {"requires": {"bins": ["gmgn-cli"], "env": ["GMGN_API_KEY"]}, "primaryEnv": "GMGN_API_KEY"}}
 ---
 
 # GMGN Early Project Screening
@@ -95,6 +94,11 @@ If no tokens pass, say so explicitly rather than forcing a pick.
 
 ## Output Format
 
+Before rendering the screening report:
+- Always display the full on-chain token address for every candidate, shortlist entry, and final recommendation.
+- Symbols or token names may be shown only as secondary context next to the full address.
+- Never shorten any address with `...` or any other ellipsis form.
+
 ```
 ═══════════════════════════════════════════
   EARLY PROJECT SCREENING — {chain} — {date}
@@ -102,18 +106,18 @@ If no tokens pass, say so explicitly rather than forcing a pick.
 
 Screened: {N} tokens from trenches -> {M} shortlisted -> {K} passed security
 
-# | Symbol | Address | Smart Degens | Rug Risk | Security | Verdict
-1 | ...    | ...     | {N} wallets   | {X}      | ✅/⚠️/🚫  | Watch / Small position / Skip
-2 | ...    | ...     | {N} wallets   | {X}      | ✅/⚠️/🚫  | ...
+# | Address | Symbol | Smart Degens | Rug Risk | Security | Verdict
+1 | {token_1_address} | {token_1_symbol} | {N} wallets | {X} | ✅/⚠️/🚫 | Watch / Small position / Skip
+2 | {token_2_address} | {token_2_symbol} | {N} wallets | {X} | ✅/⚠️/🚫 | Watch / Small position / Skip
 
 ─── TOP PICK ──────────────────────────────
-{SYMBOL}: Smart money in early, security clean, social present
+{top_pick_address} ({top_pick_symbol}): Smart money in early, security clean, social present
 Action: Small exploratory position / Watch 30-60m / Skip
 
 ─── NOTES ─────────────────────────────────
-- Why shortlisted: ...
-- Why rejected: ...
-- Missing data / ambiguities: ...
+- Why shortlisted: {full_address} ({symbol}) because ...
+- Why rejected: {full_address} ({symbol}) because ...
+- Missing data / ambiguities: {full_address} ({symbol}) / none
 ═══════════════════════════════════════════
 ```
 

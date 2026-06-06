@@ -2,7 +2,6 @@
 name: gmgn-daily-brief
 description: 'Orchestrate a structured GMGN daily market brief: market pulse → smart money moves → new token watch → risk scan. Delegates CLI execution to gmgn-market, gmgn-track, and gmgn-token skills. Requires: gmgn-cli, GMGN_API_KEY, and the three referenced skills installed.'
 argument-hint: "[--chain <sol|bsc|base|eth>]"
-metadata: {"openclaw": {"requires": {"bins": ["gmgn-cli"], "env": ["GMGN_API_KEY"]}, "primaryEnv": "GMGN_API_KEY"}}
 ---
 
 # GMGN Daily Market Brief
@@ -49,6 +48,11 @@ Flag: `rug_ratio > 0.3`, `top_10_holder_rate > 0.5`, `creator_token_status = cre
 
 ## Output Format
 
+Before rendering the brief:
+- Always display the full on-chain token or wallet address for every referenced asset or wallet.
+- Symbols, token names, and wallet labels are optional secondary context only and must never replace the full address.
+- Never shorten any address with `...` or any other ellipsis form.
+
 ```
 ═══════════════════════════════════════════
   DAILY MARKET BRIEF — {chain} — {date}
@@ -57,28 +61,28 @@ Flag: `rug_ratio > 0.3`, `top_10_holder_rate > 0.5`, `creator_token_status = cre
 📊 MARKET PULSE
   Phase:        Risk-on / Risk-off / Mixed
   Breadth:      {N} tokens trending (broad/narrow)
-  Top movers:   TOKEN_A (+X%), TOKEN_B (+X%), TOKEN_C (+X%)
+  Top movers:   {token_a_address} ({token_a_symbol}, +X%), {token_b_address} ({token_b_symbol}, +X%), {token_c_address} ({token_c_symbol}, +X%)
   Smart money:  Present in trending ✅ / Absent ⚠️
 
 🧠 SMART MONEY MOVES
   Buying:
-    • TOKEN_A — {N} wallets accumulating, avg price_change +{X}%
-    • TOKEN_B — {N} wallets, fresh entry
+    • {token_a_address} ({token_a_symbol}) — {N} wallets accumulating, avg price_change +{X}%
+    • {token_b_address} ({token_b_symbol}) — {N} wallets, fresh entry
   Selling:
-    • TOKEN_C — {N} wallets reducing
-  Cluster signal: TOKEN_A (trending + smart money overlap) 🔥
+    • {token_c_address} ({token_c_symbol}) — {N} wallets reducing
+  Cluster signal: {token_a_address} ({token_a_symbol}, trending + smart money overlap) 🔥
 
 🌱 EARLY WATCH
-  • TOKEN_X — near graduation, {N} smart degens, rug_ratio {X}
-  • TOKEN_Y — just graduated, strong volume, clean security
+  • {token_x_address} ({token_x_symbol}) — near graduation, {N} smart degens, rug_ratio {X}
+  • {token_y_address} ({token_y_symbol}) — just graduated, strong volume, clean security
 
 ⚠️ RISK SIGNALS
-  • No active warnings / TOKEN_Z: whale concentration rising (top_10 = {X}%)
+  • No active warnings / {token_z_address} ({token_z_symbol}): whale concentration rising (top_10 = {X}%)
 
 ─── SUGGESTED ACTIONS ─────────────────────
-  Opportunity:  TOKEN_A → run full token research
-  Caution:      TOKEN_C → smart money exiting
-  New entry:    TOKEN_X → early screening recommended
+  Opportunity:  {token_a_address} ({token_a_symbol}) → run full token research
+  Caution:      {token_c_address} ({token_c_symbol}) → smart money exiting
+  New entry:    {token_x_address} ({token_x_symbol}) → early screening recommended
 ═══════════════════════════════════════════
 ```
 
