@@ -63,11 +63,6 @@ For each matched skill, output:
 
 ## Output Format
 
-Before rendering the recommendation:
-- Always append a full `ALL ORCHESTRATION SKILLS` section at the very end of the reply.
-- In that final section, list every orchestration skill (including this router) with its exact skill command name, full argument-hint, and a one-line purpose.
-- The matched recommendation comes first; the full catalog comes after, as a reference appendix.
-
 ```
 ═══════════════════════════════════════════
   SKILL ROUTER — Goal: {user's stated goal}
@@ -87,18 +82,6 @@ Before rendering the recommendation:
 ─── RECOMMENDED PIPELINE ─────────────────
   {if multi-step, show the flow: Skill A → Skill B → Skill C}
   {if single step, state: "This goal is fully covered by one skill."}
-
-─── ALL ORCHESTRATION SKILLS ─────────────
-  gmgn-daily-brief [--chain <sol|bsc|base|eth>] — Daily market overview: pulse + smart money + early watch + risk scan
-  gmgn-market-opportunities [--chain <sol|bsc|base|eth>] [--interval <1m|5m|1h|6h|24h>] [--pool-size <number>] [--top <number>] — Rank trending tokens and surface top watchlist picks
-  gmgn-early-project-screening [--chain <sol|bsc|base|eth>] [--type <new_creation|near_completion|completed>...] [--filter-preset <safe|strict|none>] [--max-candidates <number>] — Screen newly launched tokens for smart money entry
-  gmgn-token-due-diligence --address <token_address> [--chain <sol|bsc|base|eth>] — Fast pre-buy safety check with buy/caution/avoid verdict
-  gmgn-token-research --address <token_address> [--chain <sol|bsc|base|eth>] [--trending-interval <1m|5m|1h|6h|24h>] — Full token research with buy/watch/skip verdict
-  gmgn-project-deep-report --address <token_address> [--chain <sol|bsc|base|eth>] [--kline-resolution <1m|5m|15m|1h|4h|1d>] [--trending-interval <1m|5m|1h|6h|24h>] — Multi-dimension scored deep report for large-position decisions
-  gmgn-risk-warning --address <token_address> [--chain <sol|bsc|base|eth>] [--kline-resolution <1m|5m|15m|1h|4h|1d>] — Active risk monitoring: whale exits, liquidity drain, dev dump
-  gmgn-wallet-analysis --wallet <wallet_address> [--chain <sol|bsc|base|eth>] [--period <7d|30d>] [--holdings-limit <number>] [--top-holdings <number>] — Wallet track record and follow-worthiness assessment
-  gmgn-smart-money-profile --wallet <wallet_address> [--chain <sol|bsc|base|eth>] [--activity-limit <number>] [--leaderboard-period <7d|30d>] — Trading style profile, exit patterns, copy-trade ROI estimate
-  gmgn-skill-router <goal> — Route a user query to the correct orchestration skill (this skill)
 ═══════════════════════════════════════════
 ```
 
