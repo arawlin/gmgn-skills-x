@@ -32,7 +32,7 @@ export function registerCookingCommands(program: Command): void {
     .option("--website <url>", "Website URL")
     .option("--twitter <url>", "Twitter link")
     .option("--telegram <url>", "Telegram link")
-    .option("--slippage <n>", "Slippage tolerance (e.g. 0.01 = 1%)", parseFloat)
+    .option("--slippage <n>", "Slippage tolerance (e.g. 30 = 30%)", parseFloat)
     .option("--auto-slippage", "Enable automatic slippage")
     .option("--fee <amount>", "Base gas / fee")
     .option("--priority-fee <sol>", "Priority fee in SOL (SOL only)")
@@ -66,7 +66,6 @@ export function registerCookingCommands(program: Command): void {
     // Multi-wallet buy
     .option("--buy-wallets <json>", "Multi-wallet buy config as JSON array [{from_address, buy_amt}]")
     .option("--snip-buy-wallets <json>", "Snipe-buy wallet config as JSON array [{from_address, buy_amt}]")
-    .option("--interval-seconds <n>", "Interval between multi-wallet buys in seconds", parseInt)
     // CondMarket execution config + auto-sell (JSON)
     .option("--buy-trade-config <json>", "Buy-side trade config for CondMarket orders as JSON (TradeParam)")
     .option("--sell-trade-config <json>", "Sell-side trade config for auto-sell / pending_sell as JSON (TradeParam)")
@@ -124,7 +123,6 @@ export function registerCookingCommands(program: Command): void {
       if (opts.bonkModel) params.bonk_model = opts.bonkModel;
       if (opts.buyWallets) params.buy_wallets = JSON.parse(opts.buyWallets);
       if (opts.snipBuyWallets) params.snip_buy_wallets = JSON.parse(opts.snipBuyWallets);
-      if (opts.intervalSeconds != null) params.interval_seconds = opts.intervalSeconds;
       if (opts.buyTradeConfig) params.buy_trade_config = JSON.parse(opts.buyTradeConfig);
       if (opts.sellTradeConfig) params.sell_trade_config = JSON.parse(opts.sellTradeConfig);
       if (opts.sellConfigs) params.sell_configs = JSON.parse(opts.sellConfigs);

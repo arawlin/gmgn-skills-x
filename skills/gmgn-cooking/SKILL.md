@@ -28,7 +28,7 @@ Use the `gmgn-cli` tool to create a token on a launchpad platform or query token
 
 - **Signed auth** — `cooking create` requires both `GMGN_API_KEY` and `GMGN_PRIVATE_KEY`. The private key never leaves the machine — the CLI uses it only for local signing. `cooking stats` uses exist auth (API Key only).
 
-- **Slippage** — The initial buy is executed as part of the same transaction as token creation. Slippage applies to that buy. Use `--slippage` (decimal, e.g. `0.01` = 1%) or `--auto-slippage`. One of the two is required when `--buy-amt` is set.
+- **Slippage** — The initial buy is executed as part of the same transaction as token creation. Slippage applies to that buy. Use `--slippage` (integer 0–100, e.g. `30` = 30%) or `--auto-slippage`. One of the two is required when `--buy-amt` is set.
 
 ## Financial Risk Notice
 
@@ -148,7 +148,7 @@ gmgn-cli cooking stats [--raw]
 | `--buy-amt` | Yes | Initial buy amount in **human-readable native token units** (e.g. `0.01` = 0.01 SOL). This is NOT in smallest unit. |
 | `--image` | No* | Token logo as **base64-encoded** data (max 2MB decoded). Mutually exclusive with `--image-url`. One of the two is required. |
 | `--image-url` | No* | Token logo as a publicly accessible URL. Mutually exclusive with `--image`. One of the two is required. |
-| `--slippage` | No* | Slippage tolerance, e.g. `0.01` = 1%. **Mutually exclusive with `--auto-slippage`** — provide one or the other. |
+| `--slippage` | No* | Slippage tolerance as an integer 0–100, e.g. `30` = 30%. **Mutually exclusive with `--auto-slippage`** — provide one or the other. |
 | `--auto-slippage` | No* | Enable automatic slippage. **Mutually exclusive with `--slippage`.** |
 | `--description` | No | Token description / project pitch |
 | `--website` | No | Project website URL |
@@ -180,7 +180,6 @@ gmgn-cli cooking stats [--raw]
 | `--bonk-model` | No | Bonk model identifier (**bonk DEX only**) |
 | `--buy-wallets` | No | Multi-wallet buy config as JSON array: `[{"from_address":"<addr>","buy_amt":"<n>"}]` |
 | `--snip-buy-wallets` | No | Snipe-buy wallet config as JSON array: `[{"from_address":"<addr>","buy_amt":"<n>"}]` |
-| `--interval-seconds` | No | Interval between multi-wallet buys in seconds |
 | `--buy-trade-config` | No | Buy-side trade config for CondMarket orders as JSON (TradeParam) — see Advanced API Fields |
 | `--sell-trade-config` | No | Sell-side trade config for auto-sell / pending_sell as JSON (TradeParam) — see Advanced API Fields |
 | `--sell-configs` | No | Auto-sell strategy list as JSON array (CookingSellConfig[]) — see Auto-Sell Configuration |
@@ -386,7 +385,7 @@ gmgn-cli cooking create \
   --symbol MAT \
   --buy-amt 0.01 \
   --image-url https://example.com/logo.png \
-  --slippage 0.01 \
+  --slippage 30 \
   --priority-fee 0.001
 
 # Create a token on FourMeme (BSC) — base64 image + USD1 raise token

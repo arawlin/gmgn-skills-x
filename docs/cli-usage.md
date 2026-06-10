@@ -431,7 +431,7 @@ npx gmgn-cli order quote \
 | `--input-token` | Yes | Input token contract address |
 | `--output-token` | Yes | Output token contract address |
 | `--amount` | Yes | Input amount (smallest unit) |
-| `--slippage` | Yes | Slippage tolerance, e.g. `0.01` = 1% |
+| `--slippage` | Yes | Slippage tolerance as an integer 0–100, e.g. `30` = 30% |
 
 **Response fields (data):**
 
@@ -479,7 +479,7 @@ npx gmgn-cli swap \
 | `--output-token` | Yes | all | Output token contract address |
 | `--amount` | No* | all | Input raw amount in minimal unit (e.g., lamports for SOL); required unless `--percent` is used |
 | `--percent` | No* | all | Input amount as a percentage, e.g. `50` = 50%; required unless `--amount` is used; only valid when input token is not a currency (not SOL/BNB/ETH/USDC) |
-| `--slippage` | No | all | Slippage tolerance, e.g. `0.01` = 1% |
+| `--slippage` | No | all | Slippage tolerance as an integer 0–100, e.g. `30` = 30% |
 | `--auto-slippage` | No | all | Enable automatic slippage |
 | `--min-output` | No | all | Minimum output amount (raw amount) |
 | `--anti-mev` | No | all | Enable anti-MEV protection (default true) |
@@ -557,7 +557,7 @@ gmgn-cli multi-swap \
 | `--input-amount` | No* | all | JSON map `{"addr":"amount"}` in smallest unit; one of the three amount fields is required |
 | `--input-amount-bps` | No* | all | JSON map `{"addr":"bps"}` where 5000 = 50%; only valid when input token is not a currency |
 | `--output-amount` | No* | all | JSON map `{"addr":"amount"}` target output in smallest unit |
-| `--slippage` | No | all | Slippage tolerance, e.g. `0.01` = 1% |
+| `--slippage` | No | all | Slippage tolerance as an integer 0–100, e.g. `30` = 30% |
 | `--auto-slippage` | No | all | Enable automatic slippage |
 | `--anti-mev` | No | all | Enable anti-MEV protection |
 | `--priority-fee` | No | `sol` | Priority fee in SOL (≥ 0.00001) |
@@ -643,7 +643,7 @@ gmgn-cli order strategy create \
 | `--sell-ratio-type` | No | `buy_amount` (default) / `hold_amount` |
 | `--quote-investment` | No | Quote token investment amount (`smart_trade`) |
 | `--condition-orders` | No | JSON array of condition sub-orders for `smart_trade`. Must include one `buy_low` entry (with `check_price` lower than `open_price`) plus at least one TP/SL entry |
-| `--slippage` | No | Slippage tolerance, e.g. `0.01` = 1% |
+| `--slippage` | No | Slippage tolerance as an integer 0–100, e.g. `30` = 30% |
 | `--auto-slippage` | No | Enable automatic slippage |
 | `--priority-fee` | No | Priority fee in SOL (**required for SOL chain**) |
 | `--tip-fee` | No | Tip fee (**required for SOL chain**) |
@@ -749,7 +749,7 @@ gmgn-cli cooking create \
   [--fourmeme-rate-conf <json>] \
   [--bags-fee-share-list <json>] \
   [--bonk-model <model>] \
-  [--buy-wallets <json>] [--snip-buy-wallets <json>] [--interval-seconds <n>] \
+  [--buy-wallets <json>] [--snip-buy-wallets <json>] \
   [--buy-trade-config <json>] [--sell-trade-config <json>] [--sell-configs <json>] \
   [--raw]
 ```
@@ -764,7 +764,7 @@ gmgn-cli cooking create \
 | `--buy-amt` | Yes | Initial buy amount in native token (e.g. `0.01` SOL) |
 | `--image` | No* | Token logo as base64-encoded data (max 2MB decoded); required unless `--image-url` is used |
 | `--image-url` | No* | Token logo URL; required unless `--image` is used |
-| `--slippage` | No* | Slippage tolerance, e.g. `0.01` = 1%; required unless `--auto-slippage` is used |
+| `--slippage` | No* | Slippage tolerance as an integer 0–100, e.g. `30` = 30%; required unless `--auto-slippage` is used |
 | `--auto-slippage` | No* | Enable automatic slippage; required unless `--slippage` is used |
 | `--website` | No | Website URL |
 | `--twitter` | No | Twitter link |
@@ -795,7 +795,6 @@ gmgn-cli cooking create \
 | `--bonk-model` | No | Bonk model identifier (**bonk DEX only**) |
 | `--buy-wallets` | No | Multi-wallet buy config as JSON array: `[{"from_address":"<addr>","buy_amt":"<n>"}]` |
 | `--snip-buy-wallets` | No | Snipe-buy wallet config as JSON array: `[{"from_address":"<addr>","buy_amt":"<n>"}]` |
-| `--interval-seconds` | No | Interval between multi-wallet buys in seconds |
 | `--buy-trade-config` | No | Buy-side trade config for CondMarket orders as JSON (TradeParam) |
 | `--sell-trade-config` | No | Sell-side trade config for auto-sell / pending_sell as JSON (TradeParam) |
 | `--sell-configs` | No | Auto-sell strategy list as JSON array (CookingSellConfig[]): `[{"sell_type":"delay_sell","delay_sec":<n>,"sell_ratio":"0.5","wallet_addresses":["<addr>"]}]` |

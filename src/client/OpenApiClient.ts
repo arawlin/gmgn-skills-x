@@ -150,6 +150,8 @@ export interface StrategyCreateParams {
   custom_rpc?: string;
   condition_orders?: StrategyConditionOrder[];
   quote_investment?: string;
+  sell_param?: TradeParam;
+  buy_param?: TradeParam;
 }
 
 export interface StrategyCancelParams {
@@ -312,7 +314,6 @@ export interface CreateTokenParams {
   // Multi-wallet buy
   buy_wallets?: BuyWalletInfo[];
   snip_buy_wallets?: BuyWalletInfo[];
-  interval_seconds?: number;
 }
 
 export class OpenApiClient {
