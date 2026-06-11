@@ -39,15 +39,25 @@ Select the **top 5** tokens with the best composite profile. Prefer tokens that 
 
 ### Step 3 — Present Top 5 to User
 
-Present results as a concise table, then give a one-line rationale for each pick:
+Present results as a concise table, then give a one-line rationale for each pick. The output MUST include the input parameters used and full token addresses for every token mentioned.
 
 ```
 Top 5 Trending Tokens — {chain} / 1h
+
+📥 INPUT PARAMETERS
+  Chain:        {chain}
+  Interval:     1h
+  Pool size:    {pool_size}
 
 # | Symbol | Address (short) | Smart Degens | Volume | 1h Chg | Reasoning
 1 | ...     | ...             | ...          | ...    | ...    | Smart money accumulating + high volume
 2 | ...
 ...
+
+─── FULL ADDRESSES ─────────────────────────
+  TOKEN_1 ({SYMBOL}):  {full_token_address}
+  TOKEN_2 ({SYMBOL}):  {full_token_address}
+  ...
 ```
 
 ## Follow-Up Actions

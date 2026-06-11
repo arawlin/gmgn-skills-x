@@ -135,11 +135,19 @@ Aggregate all warning signals from Steps 1–5:
 
 ## Deep Report Output
 
+The output MUST include the input parameters used and full token addresses for every token mentioned.
+
 ```
 ╔══════════════════════════════════════════════════════╗
 ║        PROJECT DEEP REPORT — {SYMBOL}                ║
-║        {chain} | {short_address} | {date}            ║
+║        {chain} | {date}                              ║
 ╚══════════════════════════════════════════════════════╝
+
+📥 INPUT PARAMETERS
+  Chain:             {chain}
+  Token address:     {full_token_address}
+  Kline resolution:  {kline_resolution}
+  Trending interval: {trending_interval}
 
 📋 FUNDAMENTALS
   Price:          ${price}
@@ -193,6 +201,10 @@ Aggregate all warning signals from Steps 1–5:
   🔴 SKIP (any hard stop OR score < 7)
      Risk factors outweigh opportunity
      → Reason: {specific flag}
+
+─── FULL ADDRESSES ─────────────────────────
+  Token:            {full_token_address}
+  {If SM/KOL wallets mentioned, list them here}
 ╚══════════════════════════════════════════════════════╝
 ```
 

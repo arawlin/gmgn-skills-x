@@ -114,11 +114,15 @@ Scoring logic:
 
 ## Output Format
 
-Render the conclusion in this exact structure:
+Render the conclusion in this exact structure. The output MUST include the input parameters used and full token/wallet addresses for every address mentioned.
 
 ```
 Token Research Summary: {symbol} ({chain})
-Address: {short_address}
+
+📥 INPUT PARAMETERS
+  Chain:           {chain}
+  Token address:   {full_token_address}
+
 ─── Security ──────────────────────────────
 Honeypot:         ✅ no / 🚫 YES — STOP
 Contract verified:✅ yes / 🚫 no / ⚠️ unknown
@@ -136,6 +140,9 @@ SM activity: accumulating / distributing / absent
 🟢 Buy — strong signals across all dimensions
 🟡 Watch — mixed signals, monitor for confirmation
 🔴 Skip — red flags present (specify which)
+
+─── FULL ADDRESSES ─────────────────────────
+  Token:            {full_token_address}
 ```
 
 ## Follow-Up Actions

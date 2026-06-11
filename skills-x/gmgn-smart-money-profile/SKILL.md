@@ -112,9 +112,15 @@ To discover active smart money wallets to compare, first use the **gmgn-track** 
 
 ## Output Template
 
+The output MUST include the input parameters used and full wallet addresses for every wallet mentioned.
+
 ```
-Smart Money Profile: {short_address}
-Chain: {chain} | Data: 7d + 30d
+Smart Money Profile
+
+📥 INPUT PARAMETERS
+  Chain:           {chain}
+  Wallet address:  {full_wallet_address}
+  Data:            7d + 30d
 
 ─── Performance ────────────────────────────
 Win Rate (7d / 30d):  {X}% / {X}%     [trend: ↑ improving / ↓ declining / → stable]
@@ -141,6 +147,10 @@ Based on {N} completed trades
 🟢 High-conviction follow — strong stats, consistent style, favorable exit pattern
 🟡 Selective follow — good stats but inconsistent or high-risk behavior
 🔴 Avoid copying — low win rate, poor exit discipline, or declining form
+
+─── FULL ADDRESSES ─────────────────────────
+  Wallet:           {full_wallet_address}
+  {If other wallets mentioned (leaderboard), list them here}
 ```
 
 ## Follow-Up Actions

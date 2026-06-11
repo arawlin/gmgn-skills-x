@@ -63,10 +63,16 @@ For each matched skill, output:
 
 ## Output Format
 
+The output MUST include the input parameters (the user's stated goal) and any token/wallet addresses mentioned by the user.
+
 ```
 ═══════════════════════════════════════════
   SKILL ROUTER — Goal: {user's stated goal}
 ═══════════════════════════════════════════
+
+📥 INPUT PARAMETERS
+  User goal:     {user's stated goal}
+  {If token/wallet address provided}:  {full_address}
 
 🔍 MATCHED SKILL(S)
 
@@ -82,6 +88,9 @@ For each matched skill, output:
 ─── RECOMMENDED PIPELINE ─────────────────
   {if multi-step, show the flow: Skill A → Skill B → Skill C}
   {if single step, state: "This goal is fully covered by one skill."}
+
+─── FULL ADDRESSES ─────────────────────────
+  {If user provided token/wallet addresses, list them here. Otherwise: "No addresses provided by user."}
 ═══════════════════════════════════════════
 ```
 

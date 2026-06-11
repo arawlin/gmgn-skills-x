@@ -68,6 +68,41 @@ Use the **gmgn-token** skill's holders and traders views:
 - 🟡 **Needs caution** — mixed picture, thin liquidity, or weak conviction
 - 🔴 **Do not buy** — one or more strong danger signals appear
 
+## Due Diligence Output
+
+The output MUST include the input parameters used and the full token address.
+
+```
+Token Due Diligence: {SYMBOL}
+
+📥 INPUT PARAMETERS
+  Chain:           {chain}
+  Token address:   {full_token_address}
+
+─── Basic Info ─────────────────────────────
+  Price:          ${price}
+  Market Cap:     ~${market_cap}
+  Liquidity:      ${liquidity}
+  Holders:        {holder_count}
+  Smart wallets:  {smart_wallets}  |  KOL wallets: {renowned_wallets}
+
+─── Security ──────────────────────────────
+  {Key security checks with ✅/⚠️/🚫}
+
+─── Liquidity Pool ────────────────────────
+  Pool:           ${liquidity} on {exchange}
+
+─── Smart Money ───────────────────────────
+  {Bullish/bearish signals}
+
+─── Verdict ───────────────────────────────
+  🟢 Looks buyable / 🟡 Needs caution / 🔴 Do not buy
+  Reason: {summary}
+
+─── FULL ADDRESSES ─────────────────────────
+  Token:            {full_token_address}
+```
+
 ## Follow-Up Actions
 
 - Full research report: use **gmgn-token-research** skill

@@ -78,10 +78,15 @@ If no specific tokens to check, skip this step and note it in the brief.
 
 ## Daily Brief Output
 
+The output MUST include the input parameters used and full token addresses for every token mentioned.
+
 ```
 ═══════════════════════════════════════════
   DAILY MARKET BRIEF — {chain} — {date}
 ═══════════════════════════════════════════
+
+📥 INPUT PARAMETERS
+  Chain:        {chain}
 
 📊 MARKET PULSE
   Phase:        Risk-on / Risk-off / Mixed
@@ -111,6 +116,14 @@ If no specific tokens to check, skip this step and note it in the brief.
   Opportunity:  TOKEN_A worth researching → run full token research
   Caution:      TOKEN_C seeing smart money exits → tighten stop
   New entry:    TOKEN_X early screening recommended
+
+─── FULL ADDRESSES ────────────────────────
+  TOKEN_A:  {full_token_address}
+  TOKEN_B:  {full_token_address}
+  TOKEN_C:  {full_token_address}
+  TOKEN_X:  {full_token_address}
+  TOKEN_Y:  {full_token_address}
+  TOKEN_Z:  {full_token_address}
 ═══════════════════════════════════════════
 ```
 

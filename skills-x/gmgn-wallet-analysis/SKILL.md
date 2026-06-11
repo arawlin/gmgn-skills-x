@@ -63,11 +63,15 @@ For the top 3–5 holdings by `usd_value`, run full token research to verify the
 
 ## Conclusion Framework
 
-After completing all steps, output a wallet profile:
+After completing all steps, output a wallet profile. The output MUST include the input parameters used and full wallet/token addresses for every address mentioned.
 
 ```
-Wallet Analysis: {short_address}
-Chain: {chain} | Period: 30d
+Wallet Analysis
+
+📥 INPUT PARAMETERS
+  Chain:           {chain}
+  Wallet address:  {full_wallet_address}
+  Period:          30d
 ─── Performance ────────────────────────────
 Win Rate:       {winrate × 100}%
 Realized P&L:   ${realized_profit}
@@ -86,6 +90,10 @@ Are their picks confirmed by other smart money? (check smart_degen_count on top 
 🟢 Worth following — strong win rate + consistent P&L + smart money overlap
 🟡 Watch first — promising stats but limited data or inconsistent style
 🔴 Not recommended — low win rate, losses, or high-risk behavior patterns
+
+─── FULL ADDRESSES ─────────────────────────
+  Wallet:           {full_wallet_address}
+  {If top-holding token addresses mentioned, list them here}
 ```
 
 ## Follow-Up Actions

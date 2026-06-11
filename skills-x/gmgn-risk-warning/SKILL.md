@@ -84,11 +84,15 @@ Look for:
 
 ## Risk Summary Output
 
-After running all steps, output a structured risk verdict:
+After running all steps, output a structured risk verdict. The output MUST include the input parameters used and full token/wallet addresses for every address mentioned.
 
 ```
-Risk Assessment: {TOKEN_SYMBOL} ({short_address})
-Chain: {chain} | Checked: {timestamp}
+Risk Assessment: {TOKEN_SYMBOL}
+
+📥 INPUT PARAMETERS
+  Chain:           {chain}
+  Token address:   {full_token_address}
+  Checked:         {timestamp}
 
 ─── Security ───────────────────────────────
 Honeypot:            ✅ No / 🚫 YES — exit blocked
@@ -115,6 +119,10 @@ Recent candles:      Accumulation / Distribution / Neutral
 🟢 No active risk signals — position appears stable
 🟡 Watch closely — 1–2 warning signals present, monitor daily
 🔴 HIGH RISK — multiple danger signals, consider exiting
+
+─── FULL ADDRESSES ─────────────────────────
+  Token:            {full_token_address}
+  {If whale/smart money wallets mentioned, list them here}
 ```
 
 ## Follow-Up Actions

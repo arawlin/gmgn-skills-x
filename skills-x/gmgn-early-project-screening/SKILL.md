@@ -110,10 +110,16 @@ Rate each token:
 
 ## Screening Output
 
-Present results as a table, then a per-token verdict:
+Present results as a table, then a per-token verdict. The output MUST include the input parameters used and full token addresses for every token mentioned.
 
 ```
 Early Project Screening — {chain} / {type}
+
+📥 INPUT PARAMETERS
+  Chain:        {chain}
+  Type:         {type}
+  Filter preset: {filter_preset}
+
 Screened: {N} tokens from trenches → {M} passed filter
 
 # | Symbol | Address (short) | Smart Degens | Rug Risk | Security | Verdict
@@ -123,6 +129,11 @@ Screened: {N} tokens from trenches → {M} passed filter
 ─── Top Pick ───────────────────────────────
 {SYMBOL}: Smart money in early, security clean, social present
 → Suggested action: Small exploratory position / Watch for 1h / Skip
+
+─── FULL ADDRESSES ─────────────────────────
+  TOKEN_1 ({SYMBOL}):  {full_token_address}
+  TOKEN_2 ({SYMBOL}):  {full_token_address}
+  ...
 ```
 
 **Verdict scale:**
