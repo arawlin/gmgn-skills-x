@@ -1,7 +1,7 @@
 ---
 name: gmgn-project-deep-report
-description: 'Orchestrate a comprehensive GMGN project deep report for a token: fundamentals -> security -> liquidity -> smart money conviction -> price action -> scored verdict. Delegates CLI execution to gmgn-token and gmgn-market skills. Use when asked for a deep report, full project analysis, complete investment research, or whether a token is worth a large position. Requires: gmgn-cli, GMGN_API_KEY, and the referenced skills installed.'
-argument-hint: "--address <token_address> [--chain <sol|bsc|base|eth>] [--kline-resolution <1m|5m|15m|1h|4h|1d>] [--trending-interval <1m|5m|1h|6h|24h>]"
+description: 'Orchestrate the canonical GMGN project deep report for a token: fundamentals -> security -> liquidity -> smart money conviction -> price action -> scored verdict. Delegates CLI execution to gmgn-token and gmgn-market skills. Use when asked for a deep report, full project analysis, complete investment research, or whether a token is worth a large position. Requires: gmgn-cli, GMGN_API_KEY, and the referenced skills installed.'
+argument-hint: "--address <token_address> [--chain <sol|bsc|base|eth>]"
 ---
 
 # GMGN Project Deep Report
@@ -10,14 +10,14 @@ Orchestration skill. Delegates all CLI commands and field interpretation to the 
 
 Use when: deep report, full project analysis, complete investment research, or whether a token is worth a meaningful position instead of just a quick speculative trade.
 
+> For a quick pre-buy check, use **gmgn-token-research** skill instead. This workflow is more comprehensive and produces a full written report.
+
 ## Parameters
 
 | Param | Default | Description |
 |-------|---------|-------------|
 | `--chain` | `sol` | `sol` / `bsc` / `base` / `eth` |
 | `--address` | required | Token address to analyze |
-| `--kline-resolution` | `4h` | Price-action context window |
-| `--trending-interval` | `1h` | Momentum check window |
 
 ## Workflow
 
@@ -25,169 +25,186 @@ Use when: deep report, full project analysis, complete investment research, or w
 
 Use the **gmgn-token** skill's info view.
 
-Assess:
-- Current price and approximate market cap
-- Liquidity depth relative to position size
-- `holder_count` and holder growth quality
-- `wallet_tags_stat.smart_wallets` and `wallet_tags_stat.renowned_wallets`
-- Social presence across Twitter/X, Telegram, and website
-- `cto_flag` and `creator_token_status`
+Extract and assess:
 
-Fundamental score (0-3):
-- +1 if market cap looks reasonable for the chain and category
-- +1 if social presence is strong
-- +1 if smart wallet presence and holder quality both look credible
+| Field | What to Note |
+|-------|-------------|
+| `price` | Current price |
+| Market cap | `price × circulating_supply` — compute this manually |
+| `liquidity` | USD in pool — < $50k is thin for a "serious" position |
+| `holder_count` | Total wallets holding. Growing = organic adoption |
+| `wallet_tags_stat.smart_wallets` | Smart money holders count |
+| `wallet_tags_stat.renowned_wallets` | KOL holders count |
+| `link.*` | Social presence: Twitter, Telegram, website |
+| `cto_flag` | Community takeover? |
+| `creator_token_status` | Dev still holding or has sold? |
+
+**Fundamental score (0–3):**
+- +1 if market cap reasonable for the chain/category
+- +1 if strong social presence (2+ active channels)
+- +1 if `smart_wallets` ≥ 3 AND `holder_count` growing
 
 ### Step 2 — Security Assessment
 
 Use the **gmgn-token** skill's security view.
 
-Hard stops:
-- `is_honeypot = "yes"` on supported chains
+**Hard stops (any one = do not proceed):**
+- `is_honeypot = "yes"` (BSC/Base)
 - `rug_ratio > 0.5`
-- On Solana, both `renounced_mint = false` and `renounced_freeze_account = false`
+- `renounced_mint = false` AND `renounced_freeze_account = false` (SOL) — both unrenounced
 - `sell_tax > 0.15`
 
-Security score (0-4):
-- +1 if authority and contract posture look safe
+**Security score (0–4):**
+- +1 if contract open source / renounced
 - +1 if `rug_ratio < 0.1`
 - +1 if `top_10_holder_rate < 0.3`
-- +1 if sniper and wash-trading indicators look clean
+- +1 if no snipers (`sniper_count < 5`) and no wash trading
 
 ### Step 3 — Liquidity and Pool Health
 
 Use the **gmgn-token** skill's pool view.
 
 Assess:
-- Liquidity depth and likely exit slippage
-- Pool age and market stability
-- Whether the DEX is a major venue
-- `is_on_curve` to distinguish post-graduation liquidity from bonding-curve risk
+- **Liquidity depth:** > $100k = healthy; $10k–$100k = thin; < $10k = high exit slippage
+- **Pool age:** older pool = more stable price history
+- **DEX:** recognized exchange (Raydium, Uniswap v3, PancakeSwap) = better
+- **Bonding curve status** (`is_on_curve`): if still on curve, token has not graduated — higher volatility window
 
-Liquidity score (0-2):
-- +1 if liquidity comfortably exceeds thin-market territory
-- +1 if pool age and venue quality look strong
+**Liquidity score (0–2):**
+- +1 if liquidity > $50k
+- +1 if DEX is major and pool age > 24h
 
-### Step 4 — Smart Money Conviction
+### Step 4 — Smart Money Conviction Analysis
 
-Use the **gmgn-token** skill's holders and traders views.
+This is the key differentiator from basic token research.
 
-Assess:
-- Distinct smart money wallet count
-- Net buy versus net sell posture
-- Whether unrealized profit suggests they are still holding conviction
-- Whether KOL wallets are present with active positions
-- Whether holder diversity is broad or dominated by a single whale
+Use the **gmgn-token** skill's holders and traders views:
+- Smart money holders: filter to `smart_degen`, ordered by `buy_volume_cur` descending, top 20
+- KOL holders: filter to `renowned`, ordered by `profit` descending, top 10
+- Top holders overall: ordered by `amount_percentage` descending, top 20 — check concentration
 
-Smart money score (0-4):
-- +1 if smart wallet count is meaningfully strong
-- +1 if aggregate direction still looks like accumulation
-- +1 if smart money unrealized posture is positive
-- +1 if at least one KOL is actively involved
+Assess smart money conviction:
+
+| Signal | Bullish | Bearish |
+|--------|---------|---------|
+| Smart money count | ≥ 3 distinct wallets | 0 or 1 |
+| Net direction | `buy_volume_cur` > `sell_volume_cur` | Selling exceeds buying |
+| Unrealized profit | Large (still holding, not selling) | Small or negative |
+| Realized profit | Moderate (some took profit, healthy) | Very large (majority already exited) |
+| KOL involvement | ≥ 1 KOL with active position | None |
+| Wallet diversity | Multiple different wallets | One whale dominating |
+
+**Smart money score (0–4):**
+- +1 if `smart_wallets` ≥ 3
+- +1 if net buy direction (`buy_volume_cur > sell_volume_cur` across smart wallets)
+- +1 if average `unrealized_profit` is positive (they're still in profit, still holding)
+- +1 if at least 1 KOL has an active position
 
 ### Step 5 — Price Action Context
 
-Use the **gmgn-market** skill's kline and trending views.
+Use the **gmgn-market** skill:
+- Kline view at `4h` resolution for recent price action
+- Trending view at `1h` interval to check current momentum
 
-Assess:
-- Whether the token is near a reasonable entry zone or already parabolic
-- Whether bullish candles show healthier volume than bearish candles
-- Whether the token is currently trending with smart money confirmation
+Look for:
+- **Entry context:** Is price near a local bottom (potential value) or after a run-up (chasing)?
+- **Volume confirmation:** Do bullish candles have higher volume than bearish candles?
+- **Trending:** If it appears in trending with `smart_degen_count > 0`, momentum + conviction overlap
 
-Price action score (0-2):
-- +1 if the setup does not look like late chasing
-- +1 if momentum and volume structure look healthy
+**Price action score (0–2):**
+- +1 if price is not parabolic (< 5x from recent low) — not chasing
+- +1 if volume is rising on up-candles (healthy accumulation pattern)
 
-### Step 6 — Risk Summary and Verdict
+### Step 6 — Risk Factors Summary
 
-Aggregate the five areas into one report.
+Aggregate all warning signals from Steps 1–5:
 
-Risk categories to summarize:
-- Security
-- Liquidity
-- Smart Money
-- Holder Quality
-- Price Action
+| Category | Risk Level | Key Signals |
+|----------|-----------|-------------|
+| Security | ✅/⚠️/🚫 | honeypot, rug_ratio, concentration |
+| Liquidity | ✅/⚠️/🚫 | pool size, pool age |
+| Smart Money | ✅/⚠️/🚫 | count, direction, conviction |
+| Holder Quality | ✅/⚠️/🚫 | bundler_rate, rat_trader_rate, wash_trading |
+| Price Action | ✅/⚠️/🚫 | entry timing, momentum |
 
-Verdict framework:
-- 🟢 **Strong buy candidate** — score >= 11 and no hard stops
-- 🟡 **Watchlist** — score 7-10 and no hard stops
-- 🔴 **Skip** — any hard stop or score < 7
+## Verdict
 
-If a hard stop is triggered, stop optimizing the narrative and say so directly.
+- 🟢 **Strong buy candidate** — score ≥ 11 and no hard stops
+- 🟡 **Watchlist** — score 7–10 and no hard stops
+- 🔴 **Skip** — any hard stop OR score < 7
 
-## Output Format
-
-Before rendering the report:
-- Always display the full on-chain token address whenever the token is referenced.
-- Symbols or token names may be shown only as secondary context after the full address.
-- Never shorten any address with `...` or any other ellipsis form.
-- Always include an `INPUT PARAMETERS` section that echoes the effective value of every declared input parameter.
-- If the user omitted a parameter, still show the final default value that the skill used.
+## Deep Report Output
 
 ```
-═══════════════════════════════════════════
-  PROJECT DEEP REPORT — {address}
-  {chain} | Symbol: {symbol} | {date}
-═══════════════════════════════════════════
+╔══════════════════════════════════════════════════════╗
+║        PROJECT DEEP REPORT — {SYMBOL}                ║
+║        {chain} | {short_address} | {date}            ║
+╚══════════════════════════════════════════════════════╝
 
-─── INPUT PARAMETERS ─────────────────────
-  Chain (--chain): {chain}
-  Address (--address): {address}
-  Kline Resolution (--kline-resolution): {kline_resolution}
-  Trending Interval (--trending-interval): {trending_interval}
+📋 FUNDAMENTALS
+  Price:          ${price}
+  Market Cap:     ~${market_cap}
+  Liquidity:      ${liquidity} on {exchange}
+  Holders:        {holder_count}
+  Social:         Twitter ✅/❌ | Telegram ✅/❌ | Website ✅/❌
+  Dev Status:     {creator_close = sold ✅ / creator_hold = still in ⚠️}
+  Fundamental Score: {X}/3
 
-FUNDAMENTALS
-- Price: ${price}
-- Market Cap: ~${market_cap}
-- Liquidity: ${liquidity}
-- Holders: {holder_count}
-- Social: Twitter/X {yes/no}, Telegram {yes/no}, Website {yes/no}
-- Dev Status: {creator_close / creator_hold / other}
-- Score: {x}/3
+🔒 SECURITY
+  Honeypot:       ✅ No / 🚫 YES
+  Contract:       {open_source} | {renounced}
+  Rug Risk:       {rug_ratio} → ✅/⚠️/🚫
+  Concentration:  Top-10 hold {top_10_holder_rate%} → ✅/⚠️/🚫
+  Wash Trading:   ✅ None / ⚠️ Detected
+  Security Score: {X}/4
 
-SECURITY
-- Honeypot: {yes/no}
-- Rug Risk: {rug_ratio}
-- Concentration: {top_10_holder_rate}
-- Wash Trading: {yes/no}
-- Score: {x}/4
+💧 LIQUIDITY
+  Pool:           ${liquidity} | {exchange} | Age: {pool_age}
+  Bonding Curve:  Graduated ✅ / Still on curve ⚠️
+  Liquidity Score: {X}/2
 
-LIQUIDITY
-- Pool Venue: {dex}
-- Pool Age: {pool_age}
-- Curve Status: Graduated / Still on curve
-- Score: {x}/2
+🧠 SMART MONEY CONVICTION
+  SM Holders:     {N} wallets
+  Net Direction:  Accumulating ✅ / Distributing ⚠️ / Mixed
+  SM Unrealized:  +{X}% avg (still holding) ✅ / Underwater ⚠️
+  KOL Presence:   {N} KOL wallets active
+  Smart Money Score: {X}/4
 
-SMART MONEY CONVICTION
-- Smart Wallets: {n}
-- Net Direction: Accumulating / Mixed / Distributing
-- Unrealized Posture: Positive / Mixed / Weak
-- KOL Presence: {n}
-- Score: {x}/4
+📈 PRICE ACTION
+  Recent trend:   Healthy accumulation / Parabolic (avoid chasing) / Declining
+  Trending now:   Yes (rank #{rank}) ✅ / Not trending
+  Price Action Score: {X}/2
 
-PRICE ACTION
-- Trend: Healthy accumulation / Parabolic / Weak
-- Trending Now: Yes / No
-- Score: {x}/2
+─── RISK FLAGS ──────────────────────────────────────
+  {List any ⚠️ or 🚫 signals here, or "No major risk flags"}
 
-RISK FLAGS
-- {list major warning signals or state none}
+─── TOTAL SCORE ─────────────────────────────────────
+  {X} / 15
 
-TOTAL SCORE
-- {x}/15
+─── VERDICT ─────────────────────────────────────────
+  🟢 STRONG BUY CANDIDATE (score ≥ 11, no hard stops)
+     Smart money confirmed, clean security, healthy liquidity
+     → Suggested: research position sizing, use gmgn-swap
 
-VERDICT
-- 🟢 Strong buy candidate / 🟡 Watchlist / 🔴 Skip
-- Reason: {1-2 sentence summary}
-═══════════════════════════════════════════
+  🟡 WATCHLIST (score 7–10, no hard stops)
+     Some positive signals but missing key conviction indicators
+     → Suggested: monitor for 24–48h, re-assess if SM increases
+
+  🔴 SKIP (any hard stop OR score < 7)
+     Risk factors outweigh opportunity
+     → Reason: {specific flag}
+╚══════════════════════════════════════════════════════╝
 ```
+
+## Follow-Up Actions
+
+- Quick pre-buy check instead: use **gmgn-token-research** skill
+- Ongoing risk monitoring after entering a position: use **gmgn-risk-warning** skill
+- Deep dive on specific smart money wallets holding this token: use **gmgn-smart-money-profile** skill
+- Find more tokens to run this report on: use **gmgn-market-opportunities** skill
 
 ## Dependencies
 
 This skill requires the following companion skills to be installed and eligible:
 - **gmgn-token** — info, security, pool, holders, traders, and field knowledge
 - **gmgn-market** — kline and trending context plus field knowledge
-
-Optional downstream follow-up skills:
-- **gmgn-swap** — execution after explicit user confirmation

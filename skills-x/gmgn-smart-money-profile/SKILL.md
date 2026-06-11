@@ -1,7 +1,7 @@
 ---
 name: gmgn-smart-money-profile
-description: 'Orchestrate a GMGN smart money profile workflow for a wallet: compare 7d and 30d stats -> infer trading style from activity -> estimate take-profit and stop-loss behavior -> approximate copy-trade ROI -> optionally rank multiple wallets in a leaderboard. Delegates CLI execution to gmgn-portfolio and gmgn-track skills. Use when asked what a wallet''s trading style is, when it takes profit or cuts losses, whether copying it would have worked, or which smart money wallets are best to follow. Requires: gmgn-cli, GMGN_API_KEY, and the referenced skills installed.'
-argument-hint: "--wallet <wallet_address> [--chain <sol|bsc|base|eth>] [--activity-limit <number>] [--leaderboard-period <7d|30d>]"
+description: 'Orchestrate the canonical GMGN smart money profile workflow for a wallet: compare 7d and 30d stats -> infer trading style from activity -> estimate take-profit and stop-loss behavior -> approximate copy-trade ROI -> optionally rank multiple wallets in a leaderboard. Delegates CLI execution to gmgn-portfolio and gmgn-track skills. Use when asked what a wallet''s trading style is, when it takes profit or cuts losses, whether copying it would have worked, or which smart money wallets are best to follow. Requires: gmgn-cli, GMGN_API_KEY, and the referenced skills installed.'
+argument-hint: "--wallet <wallet_address> [--chain <sol|bsc|base|eth>]"
 ---
 
 # GMGN Smart Money Profile
@@ -10,127 +10,143 @@ Orchestration skill. Delegates all CLI commands and field interpretation to the 
 
 Use when: smart money profile, what is this wallet's trading style, when does it take profit, when does it cut losses, if I copied this wallet what would my return be, or which smart money wallets are most worth following.
 
+> For basic "is this wallet worth following" analysis, use **gmgn-wallet-analysis** skill instead. This workflow goes deeper into behavior patterns and copy-trade estimation.
+
 ## Parameters
 
 | Param | Default | Description |
 |-------|---------|-------------|
 | `--chain` | `sol` | `sol` / `bsc` / `base` / `eth` |
-| `--wallet` | required | Wallet address for single-wallet profile mode |
-| `--activity-limit` | `100` | Activity depth used for style inference |
-| `--leaderboard-period` | `30d` | Default comparison window for multi-wallet ranking |
+| `--wallet` | required | Wallet address to profile |
 
 ## Workflow
 
-### Step 1 — Dual-Window Stats
+### Step 1 — Trading Stats (Both Periods)
 
-Use the **gmgn-portfolio** skill to fetch stats for both `7d` and `30d`.
+Use the **gmgn-portfolio** skill to fetch stats for both `7d` and `30d` to detect performance trends.
 
-Assess:
-- Whether `winrate` and `pnl` are improving or deteriorating
-- Whether recent form is stronger or weaker than the broader 30d baseline
-- Whether trade count and token count imply active rotation or selective trading
+Key metrics:
 
-### Step 2 — Activity-Based Style Inference
+| Field | Meaning | Threshold |
+|-------|---------|-----------|
+| `winrate` | % of profitable trades (0–1) | > 0.6 strong, > 0.5 acceptable |
+| `pnl` | realized_profit / total_cost multiplier | > 1.0 = net positive |
+| `realized_profit` | USD profit locked in | context-dependent |
+| `buy_count` / `sell_count` | trading frequency | high = active trader |
+| `token_num` | number of distinct tokens traded | high = diversified |
 
-Use the **gmgn-portfolio** skill's activity view.
+**Trend signal:** If 7d `winrate` is significantly higher than 30d, performance is improving. If lower, recent form is declining.
 
-Infer from completed buy and sell cycles:
-- Approximate holding duration
-- Scalper, day trader, swing trader, or longer-term holder behavior
-- Position sizing consistency
-- Whether the wallet is a specialist or a trend chaser
+### Step 2 — Activity Analysis (Style Inference)
 
-### Step 3 — Exit Pattern Analysis
+Use the **gmgn-portfolio** skill's activity view, limit 100.
 
-Use the same activity data to approximate round-trip outcomes.
+For each token that appears in both a buy and a sell event, compute holding duration:
+- `sell.timestamp - buy.timestamp` in hours
+
+**Style classification:**
+
+| Holding Duration | Style Label |
+|-----------------|-------------|
+| < 1 hour | Scalper |
+| 1h – 24h | Day trader |
+| 1d – 7d | Swing trader |
+| > 7d | Position / long-term holder |
+
+Also check:
+- **Position sizing consistency** — are buy amounts roughly similar (disciplined) or highly variable?
+- **Token concentration** — does the wallet repeatedly trade the same tokens (specialist) or always new ones (trend chaser)?
+- **Sell behavior** — do sells follow a pattern (e.g., always sells after 2–3x, or cuts at -30%)?
+
+### Step 3 — Take-Profit and Stop-Loss Pattern
+
+From activity data, cross-reference buy price vs sell price for completed round trips:
+
+- For each token: find a `buy` event followed by a `sell` event
+- Compute approximate return: `(sell_total_usd - buy_total_usd) / buy_total_usd`
+- Group outcomes: wins vs losses
 
 Look for:
-- Typical take-profit level
-- Typical stop-loss or drawdown tolerance
-- Whether win sizes are larger than loss sizes
-- Whether exits look disciplined or erratic
+- **Typical gain at exit** — does the wallet consistently take profit at ~2x, ~5x, or higher?
+- **Typical loss at cut** — does the wallet cut quickly at -20% or hold through large drawdowns?
+- **Asymmetry** — wins larger than losses = positive expected value. Reverse = risk.
 
-### Step 4 — Copy-Trade ROI Estimate
+### Step 4 — Copy-Trade ROI Estimation (Approximate)
 
-Approximate the wallet's last 20-30 completed trades using historical buy and sell activity.
+> **Note:** This is an approximation based on historical activity data, not a precise backtest.
 
-Summarize:
-- Average return per trade
-- Number of profitable versus losing trades
-- Best and worst recent trades
-- Approximate equal-weight copy result over the recent sample
+For the wallet's last 20–30 completed trades (round-trip buys + sells):
 
-If the wallet still has open positions, optionally use the **gmgn-portfolio** skill's holdings view to note unrealized context, but keep the ROI estimate clearly labeled as approximate rather than a precise backtest.
+1. List all buy events: token, amount_usd, timestamp
+2. List all sell events for the same tokens
+3. Compute per-trade return: `(sell_usd - buy_usd) / buy_usd`
+4. Average the returns
 
-### Step 5 — Optional Leaderboard Comparison
+**If you want to estimate "if I had followed today":**
+For still-open positions (buy with no matching sell), use holdings view to get current `usd_value` vs `cost`, computing unrealized return.
 
-When the user wants multi-wallet comparison:
-- Use the **gmgn-track** skill's smartmoney feed to discover active wallets when needed
-- Use the **gmgn-portfolio** skill's batch stats to compare multiple wallets
+Present as:
+```
+Copy-trade estimate (last 30d completed trades):
+  Avg return per trade: +X%
+  Win rate:             X / Y trades profitable
+  Best trade:           +X% on TOKEN
+  Worst trade:          -X% on TOKEN
+  Approximate 30d return if equal-weight copy: ~X%
+⚠️ This is an approximation. Actual results depend on entry timing, slippage, and fees.
+```
 
-Rank with a composite view of:
-- Win rate
-- PnL ratio
-- Diversity or token count
-- Short-term versus medium-term performance trend
+### Step 5 — Smart Money Leaderboard (Multi-Wallet Comparison)
 
-### Step 6 — Verdict
+When the user wants to compare multiple smart money wallets:
 
-Assign one conclusion:
-- 🟢 **High-conviction follow** — strong stats, coherent style, favorable exit discipline
-- 🟡 **Selective follow** — some edge is visible, but behavior or trend quality is mixed
-- 🔴 **Avoid copying** — weak stats, poor exit pattern, or clearly declining form
+Use the **gmgn-portfolio** skill to batch-stats up to 10 wallets at once for `30d`.
 
-Call out uncertainty whenever activity data is too sparse to infer style reliably.
+Rank wallets by composite score. Suggested weights:
+- `winrate` × 40%
+- `pnl` × 40%
+- `token_num` (diversity) × 10%
+- Recency (7d winrate vs 30d winrate improvement) × 10%
 
-## Output Format
+To discover active smart money wallets to compare, first use the **gmgn-track** skill's smart money feed to extract unique wallet addresses, then batch-query their stats.
 
-Before rendering the profile:
-- Always display the full on-chain wallet address for the profiled wallet and for any compared wallets in leaderboard mode.
-- Wallet labels, ENS-style names, or person names may be shown only as secondary context after the full address.
-- Never shorten any address with `...` or any other ellipsis form.
-- Always include an `INPUT PARAMETERS` section that echoes the effective value of every declared input parameter.
-- If the user omitted a parameter, still show the final default value that the skill used.
+## Output Template
 
 ```
-═══════════════════════════════════════════
-  SMART MONEY PROFILE — {wallet_address}
-  {chain} | Data: 7d + 30d | Wallet Label: {wallet_label_if_any}
-═══════════════════════════════════════════
+Smart Money Profile: {short_address}
+Chain: {chain} | Data: 7d + 30d
 
-─── INPUT PARAMETERS ─────────────────────
-  Chain (--chain): {chain}
-  Wallet (--wallet): {wallet_address}
-  Activity Limit (--activity-limit): {activity_limit}
-  Leaderboard Period (--leaderboard-period): {leaderboard_period}
+─── Performance ────────────────────────────
+Win Rate (7d / 30d):  {X}% / {X}%     [trend: ↑ improving / ↓ declining / → stable]
+PnL Ratio (30d):      {X}x
+Realized Profit (30d): ${X}
 
-PERFORMANCE
-- Win Rate (7d / 30d): {x}% / {y}%
-- PnL Ratio (30d): {x}x
-- Realized Profit (30d): ${x}
-- Trend: Improving / Stable / Declining
+─── Trading Style ──────────────────────────
+Style:          Scalper / Day trader / Swing trader / Long-term holder
+Avg Hold Time:  ~{X} hours / days
+Position Size:  Consistent (disciplined) / Variable (opportunistic)
+Token Focus:    Specialist (repeats tokens) / Trend chaser (always new)
 
-TRADING STYLE
-- Style: Scalper / Day trader / Swing trader / Long-term holder
-- Avg Hold Time: {x}
-- Position Size: Consistent / Variable
-- Token Focus: Specialist / Trend chaser / Mixed
+─── Exit Behavior ──────────────────────────
+Typical take-profit: ~+{X}% gain
+Typical stop-loss:   ~-{X}% loss
+Win/loss ratio:      {avg_win}x / {avg_loss}x
 
-EXIT BEHAVIOR
-- Typical Take-Profit: ~+{x}%
-- Typical Stop-Loss: ~-{x}%
-- Win/Loss Ratio: {avg_win} / {avg_loss}
+─── Copy-Trade Estimate ────────────────────
+Approx. 30d return if copied: ~{X}%
+Based on {N} completed trades
+⚠️ Approximation only
 
-COPY-TRADE ESTIMATE
-- Approx. Return if Copied: ~{x}%
-- Based on {n} completed trades
-- Confidence: Low / Medium / High
-
-VERDICT
-- 🟢 High-conviction follow / 🟡 Selective follow / 🔴 Avoid copying
-- Reason: {1-2 sentence summary}
-═══════════════════════════════════════════
+─── Verdict ────────────────────────────────
+🟢 High-conviction follow — strong stats, consistent style, favorable exit pattern
+🟡 Selective follow — good stats but inconsistent or high-risk behavior
+🔴 Avoid copying — low win rate, poor exit discipline, or declining form
 ```
+
+## Follow-Up Actions
+
+- General wallet quality assessment: use **gmgn-wallet-analysis** skill
+- Deep dive on tokens this wallet holds: use **gmgn-token-research** skill
 
 ## Dependencies
 

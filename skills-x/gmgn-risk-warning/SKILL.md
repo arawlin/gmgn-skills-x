@@ -1,7 +1,7 @@
 ---
 name: gmgn-risk-warning
-description: 'Orchestrate a GMGN risk warning workflow for a held or watched token: security snapshot -> liquidity check -> whale holder analysis -> smart money flow -> price and volume anomaly check -> structured risk verdict. Delegates CLI execution to gmgn-token, gmgn-track, and gmgn-market skills. Use when asked whether whales are dumping, whether liquidity is still healthy, whether the developer may be exiting, or whether a position is becoming dangerous to hold. Requires: gmgn-cli, GMGN_API_KEY, and the referenced skills installed.'
-argument-hint: "--address <token_address> [--chain <sol|bsc|base|eth>] [--kline-resolution <1m|5m|15m|1h|4h|1d>]"
+description: 'Orchestrate the canonical GMGN risk warning workflow for a held or watched token: security snapshot -> liquidity check -> whale holder analysis -> smart money flow -> price and volume anomaly check -> structured risk verdict. Delegates CLI execution to gmgn-token, gmgn-track, and gmgn-market skills. Use when asked whether whales are dumping, whether liquidity is still healthy, whether the developer may be exiting, or whether a position is becoming dangerous to hold. Requires: gmgn-cli, GMGN_API_KEY, and the referenced skills installed.'
+argument-hint: "--address <token_address> [--chain <sol|bsc|base|eth>]"
 ---
 
 # GMGN Risk Warning
@@ -16,133 +16,111 @@ Use when: risk warning, are whales dumping, is liquidity still healthy, are ther
 |-------|---------|-------------|
 | `--chain` | `sol` | `sol` / `bsc` / `base` / `eth` |
 | `--address` | required | Token address to assess |
-| `--kline-resolution` | `1h` | Price and volume anomaly window |
 
 ## Workflow
 
-### Step 1 — Security Snapshot
+### Step 1 — Token Security Snapshot
 
 Use the **gmgn-token** skill's security view.
 
-Immediate danger signals:
-- `is_honeypot = "yes"`
-- `rug_ratio > 0.3`
-- `top_10_holder_rate > 0.5`
-- `creator_token_status = creator_hold`
-- On Solana, `renounced_mint = false` or `renounced_freeze_account = false`
-- `sell_tax > 0.10`
-- `bundler_rate > 0.3`
-- `rat_trader_amount_rate > 0.3`
-- `is_wash_trading = true`
+Immediate red flags (any one triggers danger):
 
-If multiple red flags appear here, bias the final verdict toward immediate caution even before deeper checks.
+| Field | Danger Signal |
+|-------|--------------|
+| `is_honeypot` | `"yes"` → sells are blocked, exit impossible (BSC/Base only) |
+| `rug_ratio` | `> 0.3` → high rug pull probability |
+| `top_10_holder_rate` | `> 0.5` → extreme concentration, whale exit risk |
+| `creator_token_status` | `creator_hold` → dev still holds, dump risk active |
+| `renounced_mint` (SOL) | `false` → dev can inflate supply at any time |
+| `renounced_freeze_account` (SOL) | `false` → dev can freeze wallets |
+| `sell_tax` | `> 0.10` → exit penalty is severe |
+| `bundler_rate` | `> 0.3` → heavily bot-bundled at launch, artificial price support |
+| `rat_trader_amount_rate` | `> 0.3` → insider trading detected |
+| `is_wash_trading` | `true` → volume is fake |
 
 ### Step 2 — Liquidity Check
 
 Use the **gmgn-token** skill's pool view.
 
-Assess:
-- Current USD liquidity and likely exit slippage
-- Whether liquidity looks materially weaker than the user's prior baseline, if one exists
-- Pool age and whether the liquidity venue looks credible
-- Whether the token is still on a bonding curve versus already graduated to a DEX
+Check for liquidity drain:
+
+- **Current liquidity (USD):** < $10k = extreme exit slippage risk
+- **Liquidity vs earlier baseline:** if you have a prior reading, compare. A drop of > 30% in a short period is a warning signal.
+- **Pool age (`creation_timestamp`):** very new pools (< 1h) combined with other risk signals = high risk.
+- **DEX (`exchange`):** verify it's a known DEX (Raydium, Uniswap, PancakeSwap). Unknown or single-sided pools are suspicious.
 
 ### Step 3 — Whale Holder Analysis
 
-Use the **gmgn-token** skill's holders view for both overall holders and smart money holders.
+Use the **gmgn-token** skill's holders view:
+- Top holders by supply percentage, ordered by `amount_percentage` descending, top 20
+- Smart money holders filtered to `smart_degen`, ordered by `amount_percentage` descending, top 20
 
 Warning signals:
-- Top 1-3 wallets hold too much of supply
-- Smart money holder count is absent or shrinking
-- Top holders include `bundler` or `rat_trader` style concentration
 
-### Step 4 — Smart Money Flow
+- **Concentration:** top 1–3 wallets hold > 20% combined → single exit can crash price
+- **Smart money exodus:** zero or declining `smart_degen` holders = conviction leaving
+- **Wallet tags:** wallets tagged `bundler` or `rat_trader` in top holders = insider concentration risk
 
-Use the **gmgn-track** skill's smart money feed and focus only on the token under review.
+### Step 4 — Recent Trade Flow (Smart Money Direction)
 
-Assess:
-- Whether multiple tracked wallets are selling recently
-- Whether clustered exits appear at the same time
-- Whether recent smart money entries are already underwater, which can precede forced exits
+Use the **gmgn-track** skill's smart money feed, filtering results for the token address in question.
 
-### Step 5 — Price and Volume Anomaly
+Check:
 
-Use the **gmgn-market** skill's kline view.
+- Are smart money wallets **selling** this token recently? (`is_open_or_close` = 1 on sell side for kol/smartmoney)
+- Is `price_change` on recent smart money buys negative? (their entry is underwater — they may exit)
+- Cluster of sells from multiple tracked wallets = strong exit signal
+
+### Step 5 — Price and Volume Anomaly (K-line)
+
+Use the **gmgn-market** skill's kline view at `1h` resolution.
 
 Look for:
-- Volume spikes without price progress
-- Price drops on expanding volume
-- Volume collapse that closes liquidity windows
-- Consecutive red candles after a local top or all-time high
 
-### Step 6 — Overall Verdict
+- **Volume spike without price increase** — selling pressure absorbing buy volume
+- **Price drop with volume spike** — active dump in progress
+- **Volume collapse** — liquidity evaporating, exit windows closing
+- **Consecutive red candles after ATH** — distribution phase
 
-Summarize across five areas:
-- Security
-- Liquidity
-- Whale Concentration
-- Smart Money Flow
-- Price Action
+## Risk Summary Output
 
-Verdict framework:
-- 🟢 **No active risk signals** — position appears stable
-- 🟡 **Watch closely** — 1-2 meaningful warning signals present
-- 🔴 **High risk** — multiple danger signals or any critical exit-risk condition
-
-If a honeypot or equivalent hard-stop condition appears, say so directly and do not soften the conclusion.
-
-## Output Format
-
-Before rendering the warning report:
-- Always display the full on-chain token address whenever the token is referenced.
-- Symbols or token names may be shown only as secondary context after the full address.
-- Never shorten any address with `...` or any other ellipsis form.
-- Always include an `INPUT PARAMETERS` section that echoes the effective value of every declared input parameter.
-- If the user omitted a parameter, still show the final default value that the skill used.
+After running all steps, output a structured risk verdict:
 
 ```
-═══════════════════════════════════════════
-  RISK WARNING — {address} ({symbol})
-  {chain} | {timestamp}
-═══════════════════════════════════════════
+Risk Assessment: {TOKEN_SYMBOL} ({short_address})
+Chain: {chain} | Checked: {timestamp}
 
-─── INPUT PARAMETERS ─────────────────────
-  Chain (--chain): {chain}
-  Address (--address): {address}
-  Kline Resolution (--kline-resolution): {kline_resolution}
+─── Security ───────────────────────────────
+Honeypot:            ✅ No / 🚫 YES — exit blocked
+Rug ratio:           ✅ {X} / ⚠️ {X} / 🚫 {X} (> 0.3 danger)
+Mint renounced:      ✅ Yes / 🚫 No
+Dev holding:         ✅ Sold / 🚫 Still holding — dump risk
 
-SECURITY
-- Honeypot: Yes / No
-- Rug Ratio: {value}
-- Dev Status: {creator_hold / creator_close / other}
-- Verdict: ✅ / ⚠️ / 🚫
+─── Liquidity ──────────────────────────────
+Current liquidity:   ${X}  [✅ healthy / ⚠️ low / 🚫 critical]
+Pool age:            {X} hours/days
 
-LIQUIDITY
-- Current Liquidity: ${value}
-- Pool Age: {value}
-- Venue Quality: Strong / Mixed / Weak
-- Verdict: ✅ / ⚠️ / 🚫
+─── Whale Concentration ────────────────────
+Top 10 hold rate:    {X}%  [✅ < 20% / ⚠️ 20–50% / 🚫 > 50%]
+Smart money holders: {N} wallets still in
 
-WHALE CONCENTRATION
-- Top 10 Hold Rate: {value}
-- Smart Money Holders: {n}
-- Verdict: ✅ / ⚠️ / 🚫
+─── Smart Money Flow ───────────────────────
+Recent smart money: Buying ✅ / Mixed ⚠️ / Selling 🚫
 
-SMART MONEY FLOW
-- Recent Direction: Buying / Mixed / Selling
-- Clustered Exits: Yes / No
-- Verdict: ✅ / ⚠️ / 🚫
+─── Price Action ───────────────────────────
+1h volume trend:     Normal / Spike (selling pressure) / Collapsing
+Recent candles:      Accumulation / Distribution / Neutral
 
-PRICE ACTION
-- Volume Trend: Normal / Selling Pressure / Collapsing
-- Candle Structure: Accumulation / Neutral / Distribution
-- Verdict: ✅ / ⚠️ / 🚫
-
-OVERALL VERDICT
-- 🟢 No active risk signals / 🟡 Watch closely / 🔴 High risk
-- Reason: {1-2 sentence summary}
-═══════════════════════════════════════════
+─── Overall Verdict ────────────────────────
+🟢 No active risk signals — position appears stable
+🟡 Watch closely — 1–2 warning signals present, monitor daily
+🔴 HIGH RISK — multiple danger signals, consider exiting
 ```
+
+## Follow-Up Actions
+
+- Full pre-buy due diligence: use **gmgn-token-research** skill
+- Comprehensive project analysis: use **gmgn-project-deep-report** skill
 
 ## Dependencies
 

@@ -1,7 +1,7 @@
 ---
 name: gmgn-market-opportunities
-description: 'Orchestrate a GMGN market opportunity discovery workflow from trending data: fetch a broad safe-filtered pool -> rank tokens with multi-factor analysis -> present top picks with rationale -> suggest deep dive or swap follow-ups. Delegates CLI execution to the gmgn-market skill. Use when asked what tokens are worth watching from trending data, which hot tokens have the best composite profile, or to discover opportunities from Solana, BSC, Base, or Ethereum trending feeds. Requires: gmgn-cli, GMGN_API_KEY, and gmgn-market installed.'
-argument-hint: "[--chain <sol|bsc|base|eth>] [--interval <1m|5m|1h|6h|24h>] [--pool-size <number>] [--top <number>]"
+description: 'Orchestrate the canonical GMGN market opportunity discovery workflow from trending data: fetch a broad safe-filtered pool -> rank tokens with multi-factor analysis -> present top picks with rationale -> suggest deep dive or swap follow-ups. Delegates CLI execution to the gmgn-market skill. Use when asked what tokens are worth watching from trending data, which hot tokens have the best composite profile, or to discover opportunities from Solana, BSC, Base, or Ethereum trending feeds. Requires: gmgn-cli, GMGN_API_KEY, and gmgn-market installed.'
+argument-hint: "[--chain <sol|bsc|base|eth>]"
 ---
 
 # GMGN Market Opportunities
@@ -15,101 +15,48 @@ Use when: market opportunities, what tokens are worth watching, top trending pic
 | Param | Default | Description |
 |-------|---------|-------------|
 | `--chain` | `sol` | `sol` / `bsc` / `base` / `eth` |
-| `--interval` | `1h` | Trending lookback window |
-| `--pool-size` | `50` | Number of trending records to screen |
-| `--top` | `5` | Number of final picks to present |
 
 ## Workflow
 
-### Step 1 — Fetch Trending Pool
+### Step 1 — Fetch Trending Data
 
-Use the **gmgn-market** skill to fetch a broad trending pool with safe baseline filters.
+Use the **gmgn-market** skill to fetch a broad trending pool: interval `1h`, ordered by volume, limit 50, with `not_honeypot` and `has_social` filters applied.
 
-Prefer a large enough candidate set to compare multiple signals rather than cherry-picking a few top-volume tokens too early.
+### Step 2 — Multi-Factor Analysis
 
-### Step 2 — Multi-Factor Ranking
+Analyze each record using the following signals (apply judgment, not rigid rules):
 
-Evaluate each candidate using judgment, not rigid cutoffs.
+| Signal | Field(s) | Weight | Notes |
+|--------|----------|--------|-------|
+| Smart money interest | `smart_degen_count`, `renowned_count` | High | Key conviction indicator |
+| Bluechip ownership | `bluechip_owner_percentage` | Medium | Quality of holder base |
+| Real trading activity | `volume`, `swaps` | Medium | Distinguishes genuine interest from wash trading |
+| Price momentum | `change1h`, `change5m` | Medium | Prefer positive, non-parabolic moves |
+| Pool safety | `liquidity` | Medium | Low liquidity = high slippage risk |
+| Token maturity | `creation_timestamp` | Low | Avoid tokens less than ~1h old unless other signals are very strong |
 
-High-priority signals:
-- `smart_degen_count` and `renowned_count` for conviction
-- `volume` and `swaps` for real trading activity
+Select the **top 5** tokens with the best composite profile. Prefer tokens that perform well across multiple signals rather than excelling in just one.
 
-Medium-priority signals:
-- `bluechip_owner_percentage` for holder quality
-- `change1h` and `change5m` for momentum quality
-- `liquidity` for slippage and pool safety
+### Step 3 — Present Top 5 to User
 
-Lower-priority context:
-- `creation_timestamp` to avoid extremely fresh tokens unless the broader profile is very strong
-
-Prefer tokens that score well across multiple dimensions over tokens that look exceptional in only one metric.
-
-### Step 3 — Select Top Picks
-
-Rank the pool and keep the top `--top` candidates.
-
-Bias toward:
-- Smart money confirmation plus real volume
-- Positive but non-parabolic momentum
-- Adequate liquidity
-- Reasonable token maturity for the chosen interval
-
-De-prioritize or exclude:
-- Suspiciously thin liquidity
-- Activity that looks dominated by noise rather than conviction
-- Extremely new tokens with weak supporting signals
-
-### Step 4 — Present Rationale
-
-For each selected token, provide a one-line reason that explains why it outranked the rest of the pool.
-
-The rationale should combine at least two signals, for example smart money plus volume, or momentum plus liquidity quality.
-
-### Step 5 — Follow-Up Paths
-
-For any surfaced token:
-- Offer a deeper handoff to the token-research workflow when the user wants due diligence
-- Offer a swap handoff only if the user explicitly wants to trade based on the trending screen alone
-
-## Output Format
-
-Before rendering the opportunities report:
-- Always display the full on-chain token address for every selected token.
-- Symbols or token names may be shown only as secondary context next to the full address.
-- Never shorten any address with `...` or any other ellipsis form.
-- Always include an `INPUT PARAMETERS` section that echoes the effective value of every declared input parameter.
-- If the user omitted a parameter, still show the final default value that the skill used.
+Present results as a concise table, then give a one-line rationale for each pick:
 
 ```
-═══════════════════════════════════════════
-  MARKET OPPORTUNITIES — {chain} / {interval}
-═══════════════════════════════════════════
+Top 5 Trending Tokens — {chain} / 1h
 
-─── INPUT PARAMETERS ─────────────────────
-  Chain (--chain): {chain}
-  Interval (--interval): {interval}
-  Pool Size (--pool-size): {pool_size}
-  Top (--top): {top}
-
-Screened: {pool_size} trending tokens
-Selected: {top} composite picks
-
-# | Address | Symbol | Smart Degens | Volume | {interval} Chg | Rationale
-1 | {token_1_address} | {token_1_symbol} | {smart_degen_count_1} | {volume_1} | {change_1} | Smart money accumulating + strong real volume
-2 | {token_2_address} | {token_2_symbol} | {smart_degen_count_2} | {volume_2} | {change_2} | Momentum improving + liquidity quality holds
-
-─── NEXT ACTIONS ─────────────────────────
-- Deep dive: run token research on {top_pick_address} ({top_pick_symbol})
-- Trade: only if the user accepts trending-only conviction for {top_pick_address}
-═══════════════════════════════════════════
+# | Symbol | Address (short) | Smart Degens | Volume | 1h Chg | Reasoning
+1 | ...     | ...             | ...          | ...    | ...    | Smart money accumulating + high volume
+2 | ...
+...
 ```
+
+## Follow-Up Actions
+
+For each token, offer:
+- **Deep dive**: run full token research — use **gmgn-token-research** skill
+- **Swap**: execute directly if the user is satisfied with the trending data alone — use **gmgn-swap** skill
 
 ## Dependencies
 
 This skill requires the following companion skill to be installed and eligible:
 - **gmgn-market** — trending command behavior plus field knowledge
-
-Optional downstream follow-up skills:
-- **gmgn-token** — deeper token research after discovery
-- **gmgn-swap** — trade execution after explicit user confirmation

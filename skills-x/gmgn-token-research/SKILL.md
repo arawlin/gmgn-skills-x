@@ -1,7 +1,7 @@
 ---
 name: gmgn-token-research
-description: 'Orchestrate a full GMGN token research workflow for a token: basic info -> security -> liquidity pool -> market heat -> smart money signals -> structured buy, watch, or skip verdict. Delegates CLI execution to gmgn-token and gmgn-market skills. Use when asked whether a token is worth researching or buying, or when the user wants a full due diligence flow instead of a quick checklist. Requires: gmgn-cli, GMGN_API_KEY, and the referenced skills installed.'
-argument-hint: "--address <token_address> [--chain <sol|bsc|base|eth>] [--trending-interval <1m|5m|1h|6h|24h>]"
+description: 'Orchestrate the canonical GMGN token research workflow for a token: basic info -> security -> liquidity pool -> market heat -> smart money signals -> structured buy, watch, or skip verdict. Delegates CLI execution to gmgn-token and gmgn-market skills. Use when asked whether a token is worth researching or buying, or when the user wants the full workflow rather than a quick checklist. Requires: gmgn-cli, GMGN_API_KEY, and the referenced skills installed.'
+argument-hint: "--address <token_address> [--chain <sol|bsc|base|eth>]"
 ---
 
 # GMGN Token Research
@@ -16,7 +16,6 @@ Use when: full token research, token due diligence, should I buy this token, or 
 |-------|---------|-------------|
 | `--chain` | `sol` | `sol` / `bsc` / `base` / `eth` |
 | `--address` | required | Token address to analyze |
-| `--trending-interval` | `1h` | Current market-heat window |
 
 ## Workflow
 
@@ -25,47 +24,47 @@ Use when: full token research, token due diligence, should I buy this token, or 
 Use the **gmgn-token** skill's info view.
 
 Check:
-- `price` and approximate market cap
+- `price`
+- `market_cap` (= `price × circulating_supply`)
 - `liquidity`
 - `holder_count`
 - `wallet_tags_stat.smart_wallets` and `wallet_tags_stat.renowned_wallets`
-- Social presence from website, Twitter/X, and Telegram fields
+- `link.website`, `link.twitter_username`, and `link.telegram`
 
 Red flags:
 - All social fields are empty
-- Liquidity is below thin-market territory
+- Liquidity < $10k
 - No smart money and no renowned wallets at all
 
 ### Step 2 — Security Check
 
 Use the **gmgn-token** skill's security view.
 
-Assess the workflow thresholds directly:
-- `is_honeypot`
-- `open_source`
-- `owner_renounced`
-- On Solana, `renounced_mint` and `renounced_freeze_account`
-- `buy_tax` and `sell_tax`
-- `top_10_holder_rate`
-- `rug_ratio`
-- `creator_token_status`
-- `sniper_count`
+Check each field against these exact workflow thresholds:
 
-Hard stops:
-- `is_honeypot = "yes"` on supported chains
-- Clearly unsafe authority posture
-- Very high rug, tax, or concentration risk
+| Field | Safe ✅ | Warning ⚠️ | Danger 🚫 |
+|-------|---------|-----------|---------|
+| `is_honeypot` | `"no"` | — | `"yes"` → Stop immediately. Do not buy. BSC/Base only; empty string on SOL means not applicable. |
+| `open_source` | `"yes"` | `"unknown"` | `"no"` |
+| `owner_renounced` | `"yes"` | `"unknown"` | `"no"` |
+| `renounced_mint` (SOL) | `true` | — | `false` → mint risk |
+| `renounced_freeze_account` (SOL) | `true` | — | `false` → freeze risk |
+| `buy_tax` / `sell_tax` | `0` | `0.01–0.05` | `>0.10` |
+| `top_10_holder_rate` | `<0.20` | `0.20–0.50` | `>0.50` |
+| `rug_ratio` | `<0.10` | `0.10–0.30` | `>0.30` |
+| `creator_token_status` | `creator_close` | — | `creator_hold` |
+| `sniper_count` | `<5` | `5–20` | `>20` |
 
-If a hard stop is triggered, keep that as the dominant conclusion.
+If `is_honeypot = "yes"`, stop immediately and display exactly: `🚫 HONEYPOT DETECTED — Do not buy this token.` Do not proceed to later steps.
 
 ### Step 3 — Liquidity Pool
 
 Use the **gmgn-token** skill's pool view.
 
-Assess:
-- Liquidity depth and likely slippage
-- DEX quality
-- Pool age
+Check:
+- Liquidity amount
+- Which DEX (`exchange`)
+- Pool age (`creation_timestamp`)
 
 Low liquidity should count as a real execution risk even if the token looks attractive elsewhere.
 
@@ -75,98 +74,77 @@ Use the **gmgn-market** skill's trending view.
 
 Check:
 - Whether the token is currently trending
-- Trending rank if present
-- Volume, `smart_degen_count`, and short-window price change
+- Query market heat with the workflow's current window fixed at `1h`
+- If present, note `rank`, `smart_degen_count`, `volume`, and `price_change_percent1h`
 
 Interpretation:
-- Found in trending with active smart money support is a positive confirmation
-- Not trending is neutral, not an automatic rejection
+- If found, that confirms active market interest
+- If not found, treat it as neutral rather than an automatic rejection
 
 ### Step 5 — Smart Money Signals
 
 Use the **gmgn-token** skill's holders and traders views.
 
 Assess:
+- Smart money holders ordered by `buy_volume_cur` descending, top 20, filtered to `smart_degen`
+- KOL traders ordered by `profit` descending, top 20, filtered to `renowned`
 - Whether smart money wallets are accumulating or distributing
 - Whether unrealized posture suggests conviction is still open
 - Whether KOL wallets are active holders or already exiting
-- Whether large holders are too concentrated
+- Whether top holders with high `amount_percentage` are starting to sell
 
 Bullish signs:
-- Smart money buy pressure remains stronger than sell pressure
-- Unrealized gains are still meaningful
-- KOL participation exists without obvious exit flow
+- Smart degen wallets are buying heavily
+- `unrealized_profit` is large and they still appear to be holding
+- `sell_volume_cur` stays low
 
 Bearish signs:
-- Smart money is distributing
-- Large realized exits dominate the recent posture
-- Supply concentration is high and unstable
+- `sell_volume_cur > buy_volume_cur` for smart money
+- Large realized profits have already been taken and wallets may be exiting
+- Top holders with very high `amount_percentage` are starting to sell
 
-### Step 6 — Verdict
+## Decision Framework
 
-Present one structured decision:
-- 🟢 **Buy** — mostly healthy signals and no hard stops
-- 🟡 **Watch** — mixed picture, no hard stop, but more confirmation needed
-- 🔴 **Skip** — hard stop or too many meaningful warnings
+After completing all steps, present a structured conclusion.
 
-Decision logic:
-- Any major red flag or hard stop should move the result to **Skip**
-- Multiple warning signals without a hard stop should usually land on **Watch**
-- A **Buy** verdict needs healthy security, workable liquidity, and supportive smart money posture
+Scoring logic:
+- If any 🚫 appears, return **Skip**
+- If 3 or more ⚠️ appear with no 🚫, return **Watch**
+- If mostly ✅ signals are present and smart money is accumulating, return **Buy**
 
 ## Output Format
 
-Before rendering the research summary:
-- Always display the full on-chain token address whenever the token is referenced.
-- Symbols or token names may be shown only as secondary context after the full address.
-- Never shorten any address with `...` or any other ellipsis form.
-- Always include an `INPUT PARAMETERS` section that echoes the effective value of every declared input parameter.
-- If the user omitted a parameter, still show the final default value that the skill used.
+Render the conclusion in this exact structure:
 
 ```
-═══════════════════════════════════════════
-  TOKEN RESEARCH SUMMARY — {address}
-  {chain} | Symbol: {symbol}
-═══════════════════════════════════════════
-
-─── INPUT PARAMETERS ─────────────────────
-  Chain (--chain): {chain}
-  Address (--address): {address}
-  Trending Interval (--trending-interval): {trending_interval}
-
-SECURITY
-- Honeypot: No / Yes
-- Contract Posture: Safe / Mixed / Unsafe
-- Rug Risk: Low / Medium / High
-- Top-10 Concentration: Low / Medium / High
-
-LIQUIDITY
-- Pool Liquidity: ${liquidity}
-- Venue: {exchange}
-- Slippage Risk: Low / Medium / High
-
-MARKET HEAT
-- Trending: Yes (rank #{rank}) / Not trending
-- Smart Degen Count: {x}
-- Short-Window Momentum: Strong / Mixed / Weak
-
-SMART MONEY
-- Smart Wallets: {x}
-- KOL Wallets: {x}
-- Smart Money Activity: Accumulating / Mixed / Distributing / Absent
-
-VERDICT
-- 🟢 Buy / 🟡 Watch / 🔴 Skip
-- Reason: {1-2 sentence summary}
-═══════════════════════════════════════════
+Token Research Summary: {symbol} ({chain})
+Address: {short_address}
+─── Security ──────────────────────────────
+Honeypot:         ✅ no / 🚫 YES — STOP
+Contract verified:✅ yes / 🚫 no / ⚠️ unknown
+Owner renounced:  ✅ yes / 🚫 no / ⚠️ unknown
+Rug risk:         {rug_ratio} → ✅ low / ⚠️ medium / 🚫 high
+Top-10 holders:   {top_10_holder_rate%} → ✅ <20% / ⚠️ 20–50% / 🚫 >50%
+─── Liquidity ─────────────────────────────
+Pool liquidity:   ${liquidity} on {exchange}
+─── Market Heat ───────────────────────────
+Trending:         yes (rank #{rank}) / not trending
+─── Smart Money ───────────────────────────
+SM holders: {smart_wallets}  |  KOL holders: {renowned_wallets}
+SM activity: accumulating / distributing / absent
+─── Verdict ───────────────────────────────
+🟢 Buy — strong signals across all dimensions
+🟡 Watch — mixed signals, monitor for confirmation
+🔴 Skip — red flags present (specify which)
 ```
+
+## Follow-Up Actions
+
+- Run deeper multi-factor report: use **gmgn-project-deep-report** skill
+- Execute swap: use **gmgn-swap** skill
 
 ## Dependencies
 
 This skill requires the following companion skills to be installed and eligible:
 - **gmgn-token** — info, security, pool, holders, traders, and field knowledge
 - **gmgn-market** — trending context and field knowledge
-
-Optional downstream follow-up skills:
-- **gmgn-project-deep-report** — deeper multi-factor report for larger-position decisions
-- **gmgn-swap** — execution after explicit user confirmation

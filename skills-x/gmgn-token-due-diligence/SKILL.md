@@ -1,6 +1,6 @@
 ---
 name: gmgn-token-due-diligence
-description: 'Orchestrate a fast GMGN token due diligence checklist before buying: basic info -> security review -> liquidity pool check -> smart money signals -> concise buy or avoid verdict. Delegates CLI execution to the gmgn-token skill. Use when the user wants a quick pre-buy or pre-swap safety check rather than a full research report. Requires: gmgn-cli, GMGN_API_KEY, and gmgn-token installed.'
+description: 'Orchestrate the canonical GMGN token due diligence checklist before buying: basic info -> security review -> liquidity pool check -> smart money signals -> concise buy or avoid verdict. Delegates CLI execution to the gmgn-token skill. Use when the user wants a quick pre-buy or pre-swap safety check rather than a full research report. Requires: gmgn-cli, GMGN_API_KEY, and gmgn-token installed.'
 argument-hint: "--address <token_address> [--chain <sol|bsc|base|eth>]"
 ---
 
@@ -19,126 +19,62 @@ Use when: quick pre-buy check, pre-swap due diligence, should I buy this token, 
 
 ## Workflow
 
-### Step 1 — Basic Info
+### Step 1 — Get Basic Info
 
 Use the **gmgn-token** skill's info view.
 
-Check:
-- Price and current liquidity
-- Holder count and whether the holder base looks non-trivial
-- `wallet_tags_stat.smart_wallets` and `wallet_tags_stat.renowned_wallets`
-- Whether any meaningful social presence exists
+Check: `price`, `liquidity`, `holder_count`, `wallet_tags_stat.smart_wallets`, `wallet_tags_stat.renowned_wallets`, `link.website` / `link.twitter_username` / `link.telegram`.
 
-Immediate concerns:
-- No social presence at all
-- Very low liquidity
-- No smart money or KOL presence at all
+**Red flags**: all `link.*` social fields empty, very low liquidity (<$10k), zero `wallet_tags_stat.smart_wallets` and `renowned_wallets`.
 
-### Step 2 — Security Review
+### Step 2 — Check Security
 
 Use the **gmgn-token** skill's security view.
 
-Pay special attention to:
-- `is_honeypot`
-- `open_source` and `owner_renounced`
-- On Solana, `renounced_mint` and `renounced_freeze_account`
-- `buy_tax` and `sell_tax`
-- `top_10_holder_rate`
-- `rug_ratio`
-- `creator_token_status`
-- `sniper_count`
+Check these fields and their safe thresholds:
 
-Hard-stop examples:
-- Honeypot or equivalent sell trap
-- Very high `rug_ratio`
-- Unrenounced mint or freeze authority on Solana
-- Very high tax or concentration risk
+| Field | Safe | Warning | Danger |
+|-------|------|---------|--------|
+| `is_honeypot` | `"no"` | — | `"yes"` → Do not buy |
+| `open_source` | `"yes"` | `"unknown"` | `"no"` |
+| `owner_renounced` | `"yes"` | `"unknown"` | `"no"` |
+| `renounced_mint` (SOL) | `true` | — | `false` → mint risk |
+| `renounced_freeze_account` (SOL) | `true` | — | `false` → freeze risk |
+| `buy_tax` / `sell_tax` | `0` | `0.01–0.05` | `>0.10` → high tax |
+| `top_10_holder_rate` | `<0.20` | `0.20–0.40` | `>0.50` → whale risk |
+| `rug_ratio` | `<0.10` | `0.10–0.30` | `>0.30` → high rug risk |
+| `creator_token_status` | `creator_close` | — | `creator_hold` → dev not sold |
+| `sniper_count` | `<5` | `5–20` | `>20` → heavily sniped |
 
-### Step 3 — Liquidity Pool Check
+### Step 3 — Check Liquidity Pool
 
 Use the **gmgn-token** skill's pool view.
 
-Assess:
-- Liquidity amount and likely slippage
-- Exchange quality
-- Pool age
+Check: liquidity amount, which DEX (`exchange`), pool age (`creation_timestamp`). Low liquidity means high slippage risk when buying or selling.
 
-Very low liquidity should sharply reduce confidence, even if other signals look acceptable.
+### Step 4 — Check Smart Money Signals
 
-### Step 4 — Smart Money Signals
+Use the **gmgn-token** skill's holders and traders views:
+- Smart money holders: filter to `smart_degen`, ordered by `buy_volume_cur` descending, top 20
+- KOL traders: filter to `renowned`, ordered by `profit` descending, top 20
 
-Use the **gmgn-token** skill's holders and traders views for smart money and renowned wallets.
+**Bullish signals**: smart_degen wallets buying heavily, `unrealized_profit` is large (still holding), renowned wallets accumulating, low `sell_volume_cur`.
 
-Bullish signs:
-- Smart money wallets still buying or holding strongly
-- Unrealized posture suggests conviction remains
-- KOL wallets are accumulating rather than distributing
+**Bearish signals**: `sell_volume_cur > buy_volume_cur` for smart money, large realized profits already taken (they may be done), top holders with very high `amount_percentage` starting to sell.
 
-Bearish signs:
-- Smart money sell volume exceeds buy volume
-- Large realized profits are already taken and conviction may be gone
-- Top holders with very large supply shares are starting to distribute
+## Verdict
 
-### Step 5 — Verdict
-
-Summarize the token into one quick outcome:
 - 🟢 **Looks buyable** — no major danger signal and some meaningful conviction exists
 - 🟡 **Needs caution** — mixed picture, thin liquidity, or weak conviction
 - 🔴 **Do not buy** — one or more strong danger signals appear
 
-If a hard stop is present, say so explicitly and do not dilute the wording.
+## Follow-Up Actions
 
-## Output Format
-
-Before rendering the due-diligence summary:
-- Always display the full on-chain token address whenever the token is referenced.
-- Symbols or token names may be shown only as secondary context after the full address.
-- Never shorten any address with `...` or any other ellipsis form.
-- Always include an `INPUT PARAMETERS` section that echoes the effective value of every declared input parameter.
-- If the user omitted a parameter, still show the final default value that the skill used.
-
-```
-═══════════════════════════════════════════
-  TOKEN DUE DILIGENCE — {address}
-  {chain} | Symbol: {symbol}
-═══════════════════════════════════════════
-
-─── INPUT PARAMETERS ─────────────────────
-  Chain (--chain): {chain}
-  Address (--address): {address}
-
-BASIC INFO
-- Liquidity: ${x}
-- Holders: {x}
-- Smart Wallets: {x}
-- Social Presence: Strong / Weak / None
-
-SECURITY
-- Honeypot: Yes / No
-- Rug Ratio: {x}
-- Authority Status: Safe / Mixed / Unsafe
-- Concentration: Low / Medium / High
-
-POOL
-- Exchange: {exchange}
-- Pool Age: {x}
-- Slippage Risk: Low / Medium / High
-
-SMART MONEY
-- Smart Money Direction: Buying / Mixed / Selling
-- KOL Posture: Accumulating / Mixed / Exiting
-
-VERDICT
-- 🟢 Looks buyable / 🟡 Needs caution / 🔴 Do not buy
-- Reason: {1-2 sentence summary}
-═══════════════════════════════════════════
-```
+- Full research report: use **gmgn-token-research** skill
+- Deeper multi-factor analysis: use **gmgn-project-deep-report** skill
+- Execute swap: use **gmgn-swap** skill
 
 ## Dependencies
 
 This skill requires the following companion skill to be installed and eligible:
 - **gmgn-token** — info, security, pool, holders, traders, and field knowledge
-
-Optional downstream follow-up skills:
-- **gmgn-swap** — execution after explicit user confirmation
-- **gmgn-project-deep-report** — deeper multi-factor analysis if the user wants a larger position decision

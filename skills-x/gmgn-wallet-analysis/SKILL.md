@@ -1,7 +1,7 @@
 ---
 name: gmgn-wallet-analysis
-description: 'Orchestrate a GMGN wallet analysis workflow for a specific wallet: current holdings -> 30d stats -> recent activity -> optional follow-wallet trade feed -> verdict. Delegates CLI execution to gmgn-portfolio and gmgn-track skills. Use when asked whether a wallet is worth following, what its investment style is, or how strong its track record looks. Requires: gmgn-cli, GMGN_API_KEY, and the referenced skills installed. Some steps require GMGN_PRIVATE_KEY.'
-argument-hint: "--wallet <wallet_address> [--chain <sol|bsc|base|eth>] [--period <7d|30d>] [--holdings-limit <number>] [--top-holdings <number>]"
+description: 'Orchestrate the canonical GMGN wallet analysis workflow for a specific wallet: current holdings -> 30d stats -> recent activity -> optional follow-wallet trade feed -> verdict. Delegates CLI execution to gmgn-portfolio and gmgn-track skills. Use when asked whether a wallet is worth following, what its investment style is, or how strong its track record looks. Requires: gmgn-cli, GMGN_API_KEY, and the referenced skills installed. Some steps require GMGN_PRIVATE_KEY.'
+argument-hint: "--wallet <wallet_address> [--chain <sol|bsc|base|eth>]"
 ---
 
 # GMGN Wallet Analysis
@@ -16,117 +16,81 @@ Use when: wallet analysis, is this wallet worth following, wallet track record r
 |-------|---------|-------------|
 | `--chain` | `sol` | `sol` / `bsc` / `base` / `eth` |
 | `--wallet` | required | Wallet address to analyze |
-| `--period` | `30d` | Stats lookback window |
-| `--holdings-limit` | `50` | Holdings/activity depth to review |
-| `--top-holdings` | `3` | Number of top current positions to summarize |
 
 ## Workflow
 
 ### Step 1 — Current Holdings
 
-Use the **gmgn-portfolio** skill to fetch the wallet's current holdings ordered by `usd_value`.
+Use the **gmgn-portfolio** skill to fetch the wallet's current holdings ordered by `usd_value` descending, limit 50.
 
-Assess:
-- Position concentration: whether one token dominates or risk is spread out
-- Current conviction: large profitable open positions suggest continued conviction
-- `unrealized_profit` distribution across holdings
-- `profit_change` patterns per position
+Check: what tokens they hold, position sizes, `usd_value`, `unrealized_profit` distribution, `profit_change` per position. A wallet holding many positions with strong unrealized gains is still in accumulation mode.
 
 ### Step 2 — Trading Stats
 
-Use the **gmgn-portfolio** skill to fetch wallet stats for `--period`.
+Use the **gmgn-portfolio** skill to fetch wallet stats for `30d`.
 
-Interpret:
-- `winrate > 0.6` as strong, but only when supported by healthy PnL
-- `realized_profit` as locked-in USD profit, not paper gains
-- `pnl` as trade efficiency: `2.0` means the wallet doubled deployed capital on completed trades
-- `buy_count` and `sell_count` as clues for frequency and style
+Key metrics:
+- `winrate` — ratio of profitable trades (0–1); > 0.6 is strong
+- `realized_profit` — total USD profit locked in over 30 days
+- `pnl` — profit/loss ratio = `realized_profit / total_cost`; `2.0` = doubled money
+- `buy_count` / `sell_count` — trading frequency and style
 
 ### Step 3 — Recent Activity
 
-Use the **gmgn-portfolio** skill to inspect recent activity.
+Use the **gmgn-portfolio** skill to inspect recent activity, limit 50.
 
 Look for:
-- Trading frequency: multiple trades per day suggests active trading
-- Holding duration: compare buy vs sell timing where possible
-- Token diversity: broad rotation versus focused conviction
-- Position sizing discipline: consistent sizing is stronger than erratic bet sizing
+- Trading frequency (multiple trades per day = active trader)
+- Average holding duration: compare `last_active_timestamp` of buy vs sell events for the same token
+- Token diversity: does the wallet trade many different tokens or focus on a few?
+- Position sizing patterns: are buys consistent size or highly variable?
 
-### Step 4 — Optional Follow-Wallet Feed
+### Step 4 — If Wallet Is Followed on GMGN
 
-If the wallet is followed on GMGN and signed auth is available, use the **gmgn-track** skill's follow-wallet view.
+If the user has followed this wallet on the GMGN platform:
 
-If `GMGN_PRIVATE_KEY` is unavailable, skip this step and note that the conclusion is based on holdings, stats, and activity only.
+> **Requires `GMGN_PRIVATE_KEY`** in `.env` — `track follow-wallet` uses signature auth. If the key is not configured, skip this step and note it in the conclusion.
 
-Check:
-- `is_open_or_close = 1` to distinguish full opens/closes from partial adds/reductions
-- `price_change` to gauge how well recent entries aged
-- Whether the live feed confirms the style inferred from stats and activity
+Use the **gmgn-track** skill's follow-wallet view for this wallet.
 
-### Step 5 — Top Holdings Quality Check
+Check `is_open_or_close` (1 = full position open/close, 0 = partial) and `price_change` (how well past trades aged).
 
-For the top `--top-holdings` positions by `usd_value`, use the **gmgn-portfolio** skill's holdings output and summarize whether the wallet concentrates in strong names, speculative names, or a mix.
+### Step 5 — Deep Dive: Evaluate Their Top Holdings
 
-If the user wants a deeper conclusion on any holding, hand off to the existing token-research workflow rather than expanding this skill.
+For the top 3–5 holdings by `usd_value`, run full token research to verify the quality of what this wallet holds.
 
-### Step 6 — Verdict
+→ Use **gmgn-token-research** skill for the full token analysis on each top holding.
 
-Assign one verdict:
-- 🟢 **Worth following** — strong win rate, solid realized PnL, coherent style, and current holdings do not look reckless
-- 🟡 **Watch first** — promising metrics but limited sample size, mixed consistency, or missing signed-auth follow feed
-- 🔴 **Not recommended** — weak win rate, poor realized results, erratic behavior, or obvious high-risk patterns
+## Conclusion Framework
 
-Call out uncertainty explicitly when data is partial.
-
-## Output Format
-
-Before rendering the wallet analysis:
-- Always display the full on-chain wallet address for the analyzed wallet and the full on-chain token address for referenced holdings.
-- Wallet labels, person names, token symbols, or token names may be shown only as secondary context after the full address.
-- Never shorten any address with `...` or any other ellipsis form.
-- Always include an `INPUT PARAMETERS` section that echoes the effective value of every declared input parameter.
-- If the user omitted a parameter, still show the final default value that the skill used.
+After completing all steps, output a wallet profile:
 
 ```
-═══════════════════════════════════════════
-  WALLET ANALYSIS — {wallet_address} — {chain}
-═══════════════════════════════════════════
-
-─── INPUT PARAMETERS ─────────────────────
-  Chain (--chain): {chain}
-  Wallet (--wallet): {wallet_address}
-  Period (--period): {period}
-  Holdings Limit (--holdings-limit): {holdings_limit}
-  Top Holdings (--top-holdings): {top_holdings}
-
-Period: {period}
-Wallet Label: {wallet_label_if_any}
-
-─── PERFORMANCE ──────────────────────────
-Win Rate:       {winrate}%
+Wallet Analysis: {short_address}
+Chain: {chain} | Period: 30d
+─── Performance ────────────────────────────
+Win Rate:       {winrate × 100}%
 Realized P&L:   ${realized_profit}
 PnL Ratio:      {pnl}x
 Trades:         {buy_count} buys / {sell_count} sells
-
-─── STYLE ────────────────────────────────
+─── Style ──────────────────────────────────
 Trading Style:  Day trader / Swing trader / Holder
+                (Day trader: many trades/day; Swing: holds days–weeks; Holder: few sells)
 Token Focus:    Meme / DeFi / Mixed / Specific sector
-Sizing Pattern: Consistent / Mixed / Erratic
-
-─── CURRENT POSITIONS ────────────────────
-Top holdings:   {token1_address} ({token1_symbol}), {token2_address} ({token2_symbol}), {token3_address} ({token3_symbol})
-Open P&L:       ${total_unrealized}
-Concentration:  High / Medium / Low
-
-─── FOLLOW FEED ──────────────────────────
-Available:      Yes / No
-Read-through:   Recent opens/closes confirm style / Not available / Mixed
-
-─── VERDICT ──────────────────────────────
-🟢 Worth following / 🟡 Watch first / 🔴 Not recommended
-Reason: {1-2 sentence justification}
-═══════════════════════════════════════════
+─── Current Positions ──────────────────────
+Top holdings by value: {token1}, {token2}, {token3}
+Open unrealized P&L: ${total_unrealized}
+─── Smart Money Score ──────────────────────
+Are their picks confirmed by other smart money? (check smart_degen_count on top holdings)
+─── Verdict ────────────────────────────────
+🟢 Worth following — strong win rate + consistent P&L + smart money overlap
+🟡 Watch first — promising stats but limited data or inconsistent style
+🔴 Not recommended — low win rate, losses, or high-risk behavior patterns
 ```
+
+## Follow-Up Actions
+
+- Deeper behavior analysis (trading style, take-profit/stop-loss, copy-trade ROI): use **gmgn-smart-money-profile** skill
 
 ## Dependencies
 
