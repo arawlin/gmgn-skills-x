@@ -6,10 +6,15 @@
  *   Signed (swap and order routes): X-APIKEY + timestamp + client_id + X-Signature (private key signature)
  */
 
+import { createRequire } from "node:module";
+
 import { buildAuthQuery, buildMessage, detectAlgorithm, sign } from "./signer.js";
 
 const RATE_LIMIT_RETRY_BUFFER_MS = 1000;
 const DEFAULT_RATE_LIMIT_AUTO_RETRY_MAX_WAIT_MS = 5000;
+
+const { version: CLI_VERSION } = createRequire(import.meta.url)("../../package.json") as { version: string };
+const USER_AGENT = `gmgn-cli/${CLI_VERSION}`;
 
 interface PreparedRequest {
   method: string;
@@ -172,6 +177,20 @@ export interface TokenSignalGroup {
   total_fee_max?: number;
   min_create_or_open_ts?: string;
   max_create_or_open_ts?: string;
+}
+
+// HotSearchesParam carries its filter fields flattened (no nested `filter` object):
+// label/interval/chain plus optional `filters` boolean tags, `limit`, and rank-style
+// numeric range bounds (min_<metric>/max_<metric>) incl. min_created/max_created.
+// Extra range keys are forwarded verbatim; the service translates metric names per
+// interval. See `market hot-searches` docs for the supported metric list.
+export interface HotSearchesParam {
+  label?: string;
+  interval: string;       // "1m" | "5m" | "1h" | "6h" | "24h"
+  chain: string;          // "sol" | "bsc" | "base" | "eth" | "robinhood" | "arc" | "stable"
+  filters?: string[];
+  limit?: number;
+  [key: string]: string[] | number | string | undefined;
 }
 
 export interface PumpFeeShareInfo {
@@ -425,6 +444,10 @@ export class OpenApiClient {
     return this.authExistRequest("POST", "/v1/market/token_signal", {}, { chain, groups });
   }
 
+  async getHotSearches(params: HotSearchesParam[]): Promise<unknown> {
+    return this.authExistRequest("POST", "/v1/market/hot_searches", {}, { params });
+  }
+
   // ---- User endpoints (exist auth) ----
 
   async getUserInfo(): Promise<unknown> {
@@ -433,6 +456,14 @@ export class OpenApiClient {
 
   async getFollowWallet(chain: string, extra: Record<string, string | number | string[]> = {}): Promise<unknown> {
     return this.authSignedRequest("GET", "/v1/trade/follow_wallet", { chain, ...extra }, null);
+  }
+
+  async getFollowTokens(chain: string, walletAddress: string, extra: Record<string, string | number> = {}): Promise<unknown> {
+    return this.authExistRequest("GET", "/v1/user/follow_tokens", { chain, wallet_address: walletAddress, ...extra });
+  }
+
+  async getFollowGroupNames(chain: string, walletAddress: string): Promise<unknown> {
+    return this.authExistRequest("GET", "/v1/user/follow_token_groups", { chain, wallet_address: walletAddress });
   }
 
   async getKol(chain?: string, limit?: number): Promise<unknown> {
@@ -462,7 +493,7 @@ export class OpenApiClient {
     slippage: number
   ): Promise<unknown> {
     const query = { chain, from_address, input_token, output_token, input_amount, slippage };
-    return this.authSignedRequest("GET", "/v1/trade/quote", query, null);
+    return this.authExistRequest("GET", "/v1/trade/quote", query);
   }
 
   // ---- Swap endpoints (signed auth) ----
@@ -522,6 +553,7 @@ export class OpenApiClient {
       const headers: Record<string, string> = {
         "X-APIKEY": this.apiKey,
         "Content-Type": "application/json",
+        "User-Agent": USER_AGENT,
       };
       const bodyStr = body !== null ? JSON.stringify(body) : null;
       return {
@@ -557,6 +589,7 @@ export class OpenApiClient {
         "X-APIKEY": this.apiKey,
         "X-Signature": signature,
         "Content-Type": "application/json",
+        "User-Agent": USER_AGENT,
       };
       return {
         method,
@@ -798,11 +831,26 @@ const TRENCHES_PLATFORMS: Record<string, string[]> = {
   ],
   bsc: [
     "fourmeme", "fourmeme_agent", "bn_fourmeme", "four_xmode_agent",
-    "flap", "clanker", "lunafun",
+    "cubepeg", "likwid", "goplus_creator", "goplus_skills", "openfour",
+    "flap", "flap_stocks", "flap_aioracle", "clanker", "lunafun",
   ],
   base: [
     "clanker", "bankr", "flaunch", "zora", "zora_creator",
     "baseapp", "basememe", "virtuals_v2", "klik",
+  ],
+  eth: [
+    "trench", "clanker", "klik", "livo", "stroid",
+    "pool_uniswap_v2", "pool_uniswap_v3", "printr",
+  ],
+  robinhood: [
+    "noxa", "virtuals_v2", "bankr", "dyorswap",
+    "pool_uniswap_v2", "pool_uniswap_v3", "pool_uniswap_v4",
+  ],
+  arc: [
+    "dyorfun_v3", "dyorswap", "trench", "onmifun", "sharcfun", "klik",
+  ],
+  stable: [
+    "dyorfun_v3", "dyorswap", "trench",
   ],
 };
 
@@ -810,6 +858,8 @@ const TRENCHES_QUOTE_ADDRESS_TYPES: Record<string, number[]> = {
   sol:  [4, 5, 3, 1, 13, 0],
   bsc:  [6, 7, 1, 16, 8, 3, 9, 10, 2, 17, 18, 0],
   base: [11, 3, 12, 13, 0],
+  eth:  [20, 11, 8, 3, 12, 1, 0],
+  robinhood: [11, 20, 24, 12, 0],
 };
 
 function buildTrenchesBody(chain: string, types?: string[], platforms?: string[], limit?: number, filters?: Record<string, number | string>): Record<string, unknown> {
@@ -819,12 +869,17 @@ function buildTrenchesBody(chain: string, types?: string[], platforms?: string[]
   const actualLimit = limit ?? 80;
   const section: Record<string, unknown> = {
     filters: ["offchain", "onchain"],
-    launchpad_platform,
-    quote_address_type,
     launchpad_platform_v2: true,
     limit: actualLimit,
     ...filters,
   };
+  // launchpad_platform / quote_address_type act as allow-list filters: sending an
+  // empty array filters out every result. Configured chains (see the maps above)
+  // supply real values; for any chain missing config we omit the field so the API
+  // applies its own defaults rather than returning an all-empty response. This is a
+  // safety net — new chains should still be added to both maps above.
+  if (launchpad_platform.length) section.launchpad_platform = launchpad_platform;
+  if (quote_address_type.length) section.quote_address_type = quote_address_type;
   const body: Record<string, unknown> = { version: "v2" };
   for (const type of selectedTypes) {
     body[type] = { ...section };

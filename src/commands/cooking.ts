@@ -2,6 +2,8 @@ import { Command } from "commander";
 import { OpenApiClient, CreateTokenParams } from "../client/OpenApiClient.js";
 import { getConfig } from "../config.js";
 import { exitOnError, printResult } from "../output.js";
+import { confirmTrade } from "../confirm.js";
+import { sanitizeMetadataField, validateMetadataUrl, MAX_DESCRIPTION_LEN, MAX_NAME_LEN } from "../sanitize.js";
 import { validateChain } from "../validate.js";
 
 export function registerCookingCommands(program: Command): void {
@@ -20,8 +22,8 @@ export function registerCookingCommands(program: Command): void {
   cooking
     .command("create")
     .description("Create a token on a launchpad platform (requires private key)")
-    .requiredOption("--chain <chain>", "Chain: sol / bsc / base")
-    .requiredOption("--dex <dex>", "Launchpad: pump / bonk / bags (sol) / fourmeme / flap (bsc) / klik / clanker (base)")
+    .requiredOption("--chain <chain>", "Chain: sol / bsc / base / robinhood")
+    .requiredOption("--dex <dex>", "Launchpad: pump / bonk / bags (sol) / fourmeme / flap (bsc) / klik / clanker (base) / trench / pons (robinhood)")
     .requiredOption("--from <address>", "Wallet address (must match API Key binding)")
     .requiredOption("--name <name>", "Token name")
     .requiredOption("--symbol <symbol>", "Token symbol")
@@ -42,7 +44,7 @@ export function registerCookingCommands(program: Command): void {
     .option("--max-priority-fee-per-gas <amount>", "Max priority fee per gas in wei (EVM only)")
     .option("--anti-mev", "Enable anti-MEV protection (SOL only)")
     .option("--anti-mev-mode <mode>", "Anti-MEV mode: off / normal / secure (SOL only)")
-    .option("--raised-token <symbol>", "Raise token symbol: pump→USDC; bonk→USD1; fourmeme→USDT/USD1; leave empty for native")
+    .option("--raised-token <symbol>", "Raise token symbol: pump→USDC; bonk→USD1; fourmeme→USDT/USD1; base/robinhood→native only; leave empty for native")
     .option("--dev-wallet-bps <n>", "Dev wallet fee in basis points (100 = 1%)", parseInt)
     .option("--dev-gas <amount>", "Dev gas amount")
     .option("--dev-priority <amount>", "Dev priority fee")
@@ -70,6 +72,7 @@ export function registerCookingCommands(program: Command): void {
     .option("--buy-trade-config <json>", "Buy-side trade config for CondMarket orders as JSON (TradeParam)")
     .option("--sell-trade-config <json>", "Sell-side trade config for auto-sell / pending_sell as JSON (TradeParam)")
     .option("--sell-configs <json>", "Auto-sell strategy list as JSON array (CookingSellConfig[])")
+    .option("--yes", "Skip the interactive confirmation prompt (requires GMGN_ALLOW_AUTOMATED_TRADES=1)")
     .option("--raw", "Output raw JSON")
     .action(async (opts) => {
       if (!opts.image && !opts.imageUrl) {
@@ -81,20 +84,23 @@ export function registerCookingCommands(program: Command): void {
         process.exit(1);
       }
       validateChain(opts.chain);
+      // Validate/clean all free-text and link metadata before publishing. This
+      // prevents the CLI from being used to mint tokens whose metadata carries a
+      // prompt-injection payload aimed at other users' AI agents.
       const params: CreateTokenParams = {
         chain: opts.chain,
         dex: opts.dex,
         from_address: opts.from,
-        name: opts.name,
-        symbol: opts.symbol,
+        name: sanitizeMetadataField(opts.name, "--name", MAX_NAME_LEN),
+        symbol: sanitizeMetadataField(opts.symbol, "--symbol", MAX_NAME_LEN),
         buy_amt: opts.buyAmt,
       };
       if (opts.image) params.image = opts.image;
-      if (opts.imageUrl) params.image_url = opts.imageUrl;
-      if (opts.description) params.description = opts.description;
-      if (opts.website) params.website = opts.website;
-      if (opts.twitter) params.twitter = opts.twitter;
-      if (opts.telegram) params.telegram = opts.telegram;
+      if (opts.imageUrl) params.image_url = validateMetadataUrl(opts.imageUrl, "--image-url");
+      if (opts.description) params.description = sanitizeMetadataField(opts.description, "--description", MAX_DESCRIPTION_LEN);
+      if (opts.website) params.website = validateMetadataUrl(opts.website, "--website");
+      if (opts.twitter) params.twitter = validateMetadataUrl(opts.twitter, "--twitter");
+      if (opts.telegram) params.telegram = validateMetadataUrl(opts.telegram, "--telegram");
       if (opts.slippage != null) params.slippage = opts.slippage;
       if (opts.autoSlippage) params.auto_slippage = true;
       if (opts.fee) params.fee = opts.fee;
@@ -126,6 +132,18 @@ export function registerCookingCommands(program: Command): void {
       if (opts.buyTradeConfig) params.buy_trade_config = JSON.parse(opts.buyTradeConfig);
       if (opts.sellTradeConfig) params.sell_trade_config = JSON.parse(opts.sellTradeConfig);
       if (opts.sellConfigs) params.sell_configs = JSON.parse(opts.sellConfigs);
+      confirmTrade({
+        action: "Create token",
+        lines: [
+          `Chain:     ${params.chain}`,
+          `Launchpad: ${params.dex}`,
+          `Wallet:    ${params.from_address}`,
+          `Name:      ${params.name}`,
+          `Symbol:    ${params.symbol}`,
+          `Buy amount: ${params.buy_amt}`,
+        ],
+      }, opts.yes);
+
       const client = new OpenApiClient(getConfig(true));
       const data = await client.createToken(params).catch(exitOnError);
       printResult(data, opts.raw);

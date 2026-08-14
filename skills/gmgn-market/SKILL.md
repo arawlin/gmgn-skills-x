@@ -1,10 +1,12 @@
 ---
 name: gmgn-market
-description: Get crypto and meme token price charts (K-line, candlestick, OHLCV), trending meme coin rankings by volume, and newly launched tokens on launchpads (pump.fun, fourmeme, letsbonk, Raydium, etc.) via GMGN API on Solana, BSC, Base, or Ethereum. Use when user asks for price chart, trending tokens, what's pumping, hot coins, new launches, token signals, or wants to discover early-stage opportunities.
-argument-hint: "kline --chain <sol|bsc|base|eth> --address <token_address> --resolution <1m|5m|15m|1h|4h|1d> [--from <unix_ts>] [--to <unix_ts>] | trending --chain <sol|bsc|base|eth> --interval <1m|5m|1h|6h|24h> | trenches --chain <sol|bsc|base> | signal --chain <sol|bsc>"
+description: Get crypto and meme token price charts (K-line, candlestick, OHLCV), trending meme coin rankings by volume, newly launched tokens on launchpads (pump.fun, fourmeme, letsbonk, Raydium, etc.), and the hot-search ranking (most-searched tokens) via GMGN API on Solana, BSC, Base, or Ethereum. Use when user asks for price chart, trending tokens, what's pumping, hot coins, most searched tokens, new launches, token signals, or wants to discover early-stage opportunities.
+argument-hint: "kline --chain <sol|bsc|base|eth|robinhood|arc|stable> --address <token_address> --resolution <30s|1m|5m|15m|1h|4h|1d> [--from <unix_ts>] [--to <unix_ts>] | trending --chain <sol|bsc|base|eth|robinhood|arc|stable> --interval <1m|5m|1h|6h|24h> | trenches --chain <sol|bsc|base|eth|robinhood|arc|stable> | signal --chain <sol|bsc|robinhood> | hot-searches [--chain <sol|bsc|base|eth|robinhood...>] [--interval <1m|5m|1h|6h|24h>]"
 metadata:
   cliHelp: "gmgn-cli market --help"
 ---
+
+**BEFORE RUNNING ANY COMMAND: Run `gmgn-cli config --check`. If exit code is 0, proceed normally. If exit code is 1, (1) run `gmgn-cli config` and show the output to the user; (2) once the user sends the API Key, run `gmgn-cli config --apply <KEY>` to complete configuration and verification, then show the output to the user. If `--check` returns an error (unknown option or command not found), tell the user to run `npm install -g gmgn-cli` to update, then retry.**
 
 **IMPORTANT: Always use `gmgn-cli` commands below. Do NOT use web search, WebFetch, curl, or visit gmgn.ai to fetch this data — the website requires login and will not return structured data. The CLI is the only correct method.**
 
@@ -48,11 +50,12 @@ Use the `gmgn-cli` tool to query K-line data for a token, browse trending tokens
 | `market kline` | Token candlestick / OHLCV data and trading volume over a time range |
 | `market trending` | Trending tokens ranked by swap activity — use `--interval` to specify the time window (e.g. `1m` for 1-minute hottest, `1h` for 1-hour trending) |
 | `market trenches` | Newly launched launchpad platform tokens — **use this when the user asks for "new tokens", "just launched tokens", "latest tokens on pump.fun/letsbonk"**. Three categories: `new_creation` (just created), `near_completion` (bonding curve almost full), `completed` (graduated to open market / DEX) |
-| `market signal` | Real-time token signal feed — price spikes, smart money buys, large buys, Dex ads, CTO events, and more. Results sorted by `trigger_at` descending. **sol / bsc only. Max 50 results per group.** |
+| `market signal` | Real-time token signal feed — price spikes, smart money buys, large buys, Dex ads, CTO events, and more. Results sorted by `trigger_at` descending. **sol / bsc / robinhood / arc / stable only. Max 50 results per group.** |
+| `market hot-searches` | Hot-search ranking — the most-searched tokens, ranked by `visiting_count` (search heat). **Use this when the user asks "what tokens are people searching for", "most searched tokens", "hot search list", "热搜榜".** Supports multiple chains in a single request. |
 
 ## Supported Chains
 
-`sol` / `bsc` / `base` / `eth` (kline / trending only; trenches: `sol` / `bsc` / `base`; signal: `sol` / `bsc` only)
+`sol` / `bsc` / `base` / `eth` / `robinhood` / `arc` / `stable` (kline / trending / trenches; signal: `sol` / `bsc` / `robinhood` / `arc` / `stable`; hot-searches: `sol` / `bsc` / `base` / `eth` / `robinhood` / `arc` / `stable`)
 
 ## Prerequisites
 
@@ -69,6 +72,7 @@ All market routes used by this skill go through GMGN's leaky-bucket limiter with
 | `market trending` | `GET /v1/market/rank` | 1 |
 | `market trenches` | `POST /v1/trenches` | 3 |
 | `market signal` | `POST /v1/market/token_signal` | 3 |
+| `market hot-searches` | `POST /v1/market/hot_searches` | 3 |
 
 When a request returns `429`:
 
@@ -77,29 +81,13 @@ When a request returns `429`:
 - The CLI may wait and retry once automatically when the remaining cooldown is short. If it still fails, stop and tell the user the exact retry time instead of sending more requests.
 - For `RATE_LIMIT_EXCEEDED` or `RATE_LIMIT_BANNED`, repeated requests during the cooldown can extend the ban by 5 seconds each time, up to 5 minutes. Do not spam retries.
 
-**First-time setup** (if `GMGN_API_KEY` is not configured):
-
-1. Generate key pair and show the public key to the user:
-   ```bash
-   openssl genpkey -algorithm ed25519 -out /tmp/gmgn_private.pem 2>/dev/null && \
-     openssl pkey -in /tmp/gmgn_private.pem -pubout 2>/dev/null
-   ```
-   Tell the user: *"This is your Ed25519 public key. Go to **https://gmgn.ai/ai**, paste it into the API key creation form, then send me the API Key value shown on the page."*
-
-2. Wait for the user's API key, then configure:
-   ```bash
-   mkdir -p ~/.config/gmgn
-   echo 'GMGN_API_KEY=<key_from_user>' > ~/.config/gmgn/.env
-   chmod 600 ~/.config/gmgn/.env
-   ```
-
 ## `market kline` Parameters
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `--chain` | Yes | `sol` / `bsc` / `base` / `eth` |
+| `--chain` | Yes | `sol` / `bsc` / `base` / `eth` / `robinhood` / `arc` / `stable` |
 | `--address` | Yes | Token contract address |
-| `--resolution` | Yes | Candlestick resolution: `1m` / `5m` / `15m` / `1h` / `4h` / `1d` |
+| `--resolution` | Yes | Candlestick resolution: `30s` / `1m` / `5m` / `15m` / `1h` / `4h` / `1d` |
 | `--from` | No | Start time (Unix seconds) |
 | `--to` | No | End time (Unix seconds) |
 
@@ -140,13 +128,39 @@ The response is an object with a `list` array. Each element in `list` is one can
 
 | Option | Description |
 |--------|-------------|
-| `--chain` | Required. `sol` / `bsc` / `base` / `eth` |
+| `--chain` | Required. `sol` / `bsc` / `base` / `eth` / `robinhood` / `arc` / `stable` |
 | `--interval` | Required. `1m` / `5m` / `1h` / `6h` / `24h` (default `1h`) |
 | `--limit <n>` | Number of results (default 100, max 100) |
 | `--order-by <field>` | Sort field: `default` / `swaps` / `marketcap` / `history_highest_market_cap` / `liquidity` / `volume` / `holder_count` / `smart_degen_count` / `renowned_count` / `gas_fee` / `price` / `change1m` / `change5m` / `change1h` / `creation_timestamp` |
 | `--direction <asc\|desc>` | Sort direction (default `desc`) |
 | `--filter <tag...>` | Repeatable filter tags (chain-specific). **⚠️ SOL defaults: `renounced frozen`; BSC/Base/ETH defaults: `not_honeypot verified renounced`.** Omitting `--filter` is NOT "no filter" — chain defaults always apply. **sol** tags: `renounced` / `frozen` / `burn` / `token_burnt` / `has_social` / `not_social_dup` / `not_image_dup` / `dexscr_update_link` / `not_wash_trading` / `is_internal_market` / `is_out_market`. **evm** tags: `not_honeypot` / `verified` / `renounced` / `locked` / `token_burnt` / `has_social` / `not_social_dup` / `not_image_dup` / `dexscr_update_link` / `is_internal_market` / `is_out_market` |
-| `--platform <name...>` | Repeatable platform filter (chain-specific). **sol**: `Pump.fun` / `pump_mayhem` / `pump_mayhem_agent` / `pump_agent` / `letsbonk` / `bonkers` / `bags` / `memoo` / `liquid` / `bankr` / `zora` / `surge` / `anoncoin` / `moonshot_app` / `wendotdev` / `heaven` / `sugar` / `token_mill` / `believe` / `trendsfun` / `trends_fun` / `jup_studio` / `Moonshot` / `boop` / `xstocks` / `ray_launchpad` / `meteora_virtual_curve` / `pool_ray` / `pool_meteora` / `pool_pump_amm` / `pool_orca`. **bsc**: `fourmeme` / `fourmeme_agent` / `bn_fourmeme` / `flap` / `clanker` / `lunafun` / `pool_uniswap` / `pool_pancake`. **base**: `clanker` / `bankr` / `flaunch` / `zora` / `zora_creator` / `baseapp` / `basememe` / `virtuals_v2` / `klik`. **eth**: no platform filter (omit `--platform` for ETH) |
+| `--platform <name...>` | Repeatable platform filter (chain-specific). **sol**: `Pump.fun` / `pump_mayhem` / `pump_mayhem_agent` / `pump_agent` / `letsbonk` / `bonkers` / `bags` / `memoo` / `liquid` / `bankr` / `zora` / `surge` / `anoncoin` / `moonshot_app` / `wendotdev` / `heaven` / `sugar` / `token_mill` / `believe` / `trendsfun` / `trends_fun` / `jup_studio` / `Moonshot` / `boop` / `xstocks` / `ray_launchpad` / `meteora_virtual_curve` / `pool_ray` / `pool_meteora` / `pool_pump_amm` / `pool_orca`. **bsc**: `fourmeme` / `fourmeme_agent` / `bn_fourmeme` / `four_xmode_agent` / `cubepeg` / `likwid` / `goplus_creator` / `goplus_skills` / `openfour` / `flap` / `flap_stocks` / `flap_aioracle` / `clanker` / `lunafun` / `pool_uniswap` / `pool_pancake`. **base**: `clanker` / `bankr` / `flaunch` / `zora` / `zora_creator` / `baseapp` / `basememe` / `virtuals_v2` / `klik`. **eth**: `trench` / `clanker` / `klik` / `livo` / `stroid` / `pool_uniswap_v2` / `pool_uniswap_v3` / `printr` |
+
+### `market trending` Range Filters
+
+Optional `--min-*` / `--max-*` flags apply server-side numeric range filtering (inclusive). Unknown metrics are ignored by the service.
+
+| Option | Description |
+|--------|-------------|
+| `--min-volume` / `--max-volume` | Trading volume (USD) |
+| `--min-liquidity` / `--max-liquidity` | Liquidity (USD) |
+| `--min-marketcap` / `--max-marketcap` | Market cap (USD) |
+| `--min-history-highest-marketcap` / `--max-history-highest-marketcap` | Historical highest market cap (USD) |
+| `--min-swaps` / `--max-swaps` | Swap count |
+| `--min-holder-count` / `--max-holder-count` | Holder count |
+| `--min-gas-fee` / `--max-gas-fee` | Gas fee |
+| `--min-renowned-count` / `--max-renowned-count` | KOL / renowned wallet count |
+| `--min-smart-degen-count` / `--max-smart-degen-count` | Smart-money holder count |
+| `--min-bot-degen-count` / `--max-bot-degen-count` | Bot-degen wallet count |
+| `--min-visiting-count` / `--max-visiting-count` | Visitor count |
+| `--min-price-change-percent` / `--max-price-change-percent` | Price change ratio over the interval |
+| `--min-insider-rate` / `--max-insider-rate` | Insider trading ratio (0–1); tokens lacking this field are excluded |
+| `--min-bundler-rate` / `--max-bundler-rate` | Bundle-bot trading ratio (0–1); tokens lacking this field are excluded |
+| `--min-entrapment-ratio` / `--max-entrapment-ratio` | Entrapment trading ratio (0–1); tokens lacking this field are excluded |
+| `--min-top10-holder-rate` / `--max-top10-holder-rate` | Top-10 holder concentration (0–1) |
+| `--min-top70-sniper-hold-rate` / `--max-top70-sniper-hold-rate` | Top-70 sniper holding ratio (0–1) |
+| `--min-dev-team-hold-rate` / `--max-dev-team-hold-rate` | Dev-team holding ratio (0–1); `--min-dev-team-hold-rate` also excludes creator-close tokens |
+| `--min-created` / `--max-created` | Token age window, duration string with a `m` (minutes) / `h` (hours) / `d` (days) suffix, e.g. `30m` / `6h` / `7d`. `--min-created` is a minimum age (excludes younger tokens); `--max-created` a maximum age (excludes older tokens). **Note:** the raw upstream rank interface accepts minutes only; the openapi-service does not forward this field — it evaluates the age window itself (cutoff = now − duration, computed natively for `m`/`h`/`d`), so `6h` / `7d` work here. Always include a unit suffix — a bare number is **not** accepted. |
 
 ## Usage Examples
 
@@ -242,29 +256,41 @@ gmgn-cli market trending \
   --platform fourmeme --platform four_xmode_agent \
   --order-by volume --limit 50 --raw
 
-# BSC 5m hottest — fourmeme family, sorted by volume
+# BSC 5m hottest — all BSC launchpads, sorted by volume
 gmgn-cli market trending \
   --chain bsc --interval 5m \
   --platform fourmeme --platform fourmeme_agent --platform bn_fourmeme --platform four_xmode_agent \
+  --platform cubepeg --platform likwid --platform goplus_creator --platform goplus_skills --platform openfour \
+  --platform flap --platform flap_stocks --platform flap_aioracle --platform clanker --platform lunafun \
   --order-by volume --limit 50 --raw
 
-# BSC 1h trending — fourmeme with safety filters
+# BSC 1h trending — all BSC launchpads with safety filters
 gmgn-cli market trending \
   --chain bsc --interval 1h \
   --platform fourmeme --platform fourmeme_agent --platform bn_fourmeme --platform four_xmode_agent \
+  --platform cubepeg --platform likwid --platform goplus_creator --platform goplus_skills --platform openfour \
+  --platform flap --platform flap_stocks --platform flap_aioracle --platform clanker --platform lunafun \
   --filter not_honeypot --filter verified \
   --order-by volume --limit 20 --raw
 ```
 
-### Trending — ETH (No Platform Filter)
+### Trending — ETH by Launchpad Platform
 
 ```bash
-# ETH 1h trending — all tokens, sorted by volume
+# ETH 1h trending — all platforms, sorted by volume
 gmgn-cli market trending --chain eth --interval 1h --order-by volume --limit 20
 
-# ETH 1h trending — with safety filters
+# ETH 1h trending — specific platforms only
 gmgn-cli market trending \
   --chain eth --interval 1h \
+  --platform trench --platform clanker --platform klik \
+  --order-by volume --limit 50 --raw
+
+# ETH 1h trending — all ETH platforms with safety filters
+gmgn-cli market trending \
+  --chain eth --interval 1h \
+  --platform trench --platform clanker --platform klik --platform livo --platform stroid \
+  --platform pool_uniswap_v2 --platform pool_uniswap_v3 --platform printr \
   --filter not_honeypot --filter verified \
   --order-by volume --limit 20 --raw
 
@@ -273,6 +299,28 @@ gmgn-cli market trending \
   --chain eth --interval 24h \
   --filter not_honeypot --filter verified \
   --order-by smart_degen_count --limit 20 --raw
+```
+
+### Trending — Numeric Range Filters
+
+```bash
+# SOL 1h trending — liquidity 10k–1M, market cap above 50k, sorted by volume
+gmgn-cli market trending \
+  --chain sol --interval 1h \
+  --min-liquidity 10000 --max-liquidity 1000000 --min-marketcap 50000 \
+  --order-by volume --limit 30 --raw
+
+# SOL 5m hottest — fresh tokens (under 30 min old) with smart money interest
+gmgn-cli market trending \
+  --chain sol --interval 5m \
+  --max-created 30m --min-smart-degen-count 1 \
+  --order-by volume --limit 50 --raw
+
+# SOL 1h trending — exclude high-insider / high-bundler tokens
+gmgn-cli market trending \
+  --chain sol --interval 1h \
+  --max-insider-rate 0.3 --max-bundler-rate 0.3 \
+  --order-by volume --limit 20 --raw
 ```
 
 ### Trending — Base by Launchpad Platform
@@ -494,7 +542,7 @@ Use field combinations to determine what stage a token is in. This affects how s
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `--chain` | Yes | `sol` / `bsc` / `base` |
+| `--chain` | Yes | `sol` / `bsc` / `base` / `eth` / `robinhood` / `arc` / `stable` |
 | `--type` | No | Categories to query, repeatable: `new_creation` / `near_completion` / `completed` (default: all three) |
 | `--launchpad-platform` | No | Launchpad platform filter, repeatable (default: all platforms for the chain) |
 | `--limit` | No | Max results per category, max 80 (default: 80) |
@@ -502,6 +550,17 @@ Use field combinations to determine what stage a token is in. This affects how s
 | `--sort-by` | No | Client-side sort per category: `smart_degen_count` / `renowned_count` / `volume_24h` / `volume_1h` / `swaps_24h` / `swaps_1h` / `rug_ratio` / `holder_count` / `usd_market_cap` / `created_timestamp` |
 | `--direction` | No | Sort direction: `asc` / `desc` (default: `desc`; `asc` for `rug_ratio`) |
 | `--min-*` / `--max-*` | No | Server-side filter range flags — see Filter Fields Reference below |
+
+**`--launchpad-platform` values by chain** (omit `--launchpad-platform` to use all of the chain's platforms):
+
+| Chain | Platforms |
+|-------|-----------|
+| `sol`  | `Pump.fun` / `pump_mayhem` / `pump_mayhem_agent` / `pump_agent` / `letsbonk` / `bonkers` / `bags` / `memoo` / `liquid` / `bankr` / `zora` / `surge` / `anoncoin` / `moonshot_app` / `wendotdev` / `heaven` / `sugar` / `token_mill` / `believe` / `trendsfun` / `trends_fun` / `jup_studio` / `Moonshot` / `boop` / `ray_launchpad` / `meteora_virtual_curve` / `xstocks` |
+| `bsc`  | `fourmeme` / `fourmeme_agent` / `bn_fourmeme` / `four_xmode_agent` / `cubepeg` / `likwid` / `goplus_creator` / `goplus_skills` / `openfour` / `flap` / `flap_stocks` / `flap_aioracle` / `clanker` / `lunafun` |
+| `base` | `clanker` / `bankr` / `flaunch` / `zora` / `zora_creator` / `baseapp` / `basememe` / `virtuals_v2` / `klik` |
+| `eth`  | `trench` / `clanker` / `klik` / `livo` / `stroid` / `pool_uniswap_v2` / `pool_uniswap_v3` / `printr` |
+| `arc`  | `dyorfun_v3` / `dyorswap` / `trench` / `onmifun` / `sharcfun` / `klik` |
+| `stable` | `dyorfun_v3` / `dyorswap` / `trench` |
 
 ### Filter Presets
 
@@ -745,25 +804,33 @@ gmgn-cli market trenches --chain sol --raw \
 # All three categories at once
 gmgn-cli market trenches --chain bsc --raw \
   --type new_creation --type near_completion --type completed \
-  --launchpad-platform fourmeme --launchpad-platform fourmeme_agent --launchpad-platform bn_fourmeme --launchpad-platform four_xmode_agent --launchpad-platform flap --launchpad-platform clanker --launchpad-platform lunafun \
+  --launchpad-platform fourmeme --launchpad-platform fourmeme_agent --launchpad-platform bn_fourmeme --launchpad-platform four_xmode_agent \
+  --launchpad-platform cubepeg --launchpad-platform likwid --launchpad-platform goplus_creator --launchpad-platform goplus_skills --launchpad-platform openfour \
+  --launchpad-platform flap --launchpad-platform flap_stocks --launchpad-platform flap_aioracle --launchpad-platform clanker --launchpad-platform lunafun \
   --limit 80
 
 # New creation only
 gmgn-cli market trenches --chain bsc --raw \
   --type new_creation \
-  --launchpad-platform fourmeme --launchpad-platform fourmeme_agent --launchpad-platform bn_fourmeme --launchpad-platform four_xmode_agent --launchpad-platform flap --launchpad-platform clanker --launchpad-platform lunafun \
+  --launchpad-platform fourmeme --launchpad-platform fourmeme_agent --launchpad-platform bn_fourmeme --launchpad-platform four_xmode_agent \
+  --launchpad-platform cubepeg --launchpad-platform likwid --launchpad-platform goplus_creator --launchpad-platform goplus_skills --launchpad-platform openfour \
+  --launchpad-platform flap --launchpad-platform flap_stocks --launchpad-platform flap_aioracle --launchpad-platform clanker --launchpad-platform lunafun \
   --limit 80
 
 # Near completion only
 gmgn-cli market trenches --chain bsc --raw \
   --type near_completion \
-  --launchpad-platform fourmeme --launchpad-platform fourmeme_agent --launchpad-platform bn_fourmeme --launchpad-platform four_xmode_agent --launchpad-platform flap --launchpad-platform clanker --launchpad-platform lunafun \
+  --launchpad-platform fourmeme --launchpad-platform fourmeme_agent --launchpad-platform bn_fourmeme --launchpad-platform four_xmode_agent \
+  --launchpad-platform cubepeg --launchpad-platform likwid --launchpad-platform goplus_creator --launchpad-platform goplus_skills --launchpad-platform openfour \
+  --launchpad-platform flap --launchpad-platform flap_stocks --launchpad-platform flap_aioracle --launchpad-platform clanker --launchpad-platform lunafun \
   --limit 80
 
 # Completed (open market) only
 gmgn-cli market trenches --chain bsc --raw \
   --type completed \
-  --launchpad-platform fourmeme --launchpad-platform fourmeme_agent --launchpad-platform bn_fourmeme --launchpad-platform four_xmode_agent --launchpad-platform flap --launchpad-platform clanker --launchpad-platform lunafun \
+  --launchpad-platform fourmeme --launchpad-platform fourmeme_agent --launchpad-platform bn_fourmeme --launchpad-platform four_xmode_agent \
+  --launchpad-platform cubepeg --launchpad-platform likwid --launchpad-platform goplus_creator --launchpad-platform goplus_skills --launchpad-platform openfour \
+  --launchpad-platform flap --launchpad-platform flap_stocks --launchpad-platform flap_aioracle --launchpad-platform clanker --launchpad-platform lunafun \
   --limit 80
 ```
 
@@ -792,6 +859,84 @@ gmgn-cli market trenches --chain base --raw \
 gmgn-cli market trenches --chain base --raw \
   --type completed \
   --launchpad-platform clanker --launchpad-platform bankr --launchpad-platform flaunch --launchpad-platform zora --launchpad-platform zora_creator --launchpad-platform baseapp --launchpad-platform basememe --launchpad-platform virtuals_v2 --launchpad-platform klik \
+  --limit 80
+```
+
+### ETH Trenches Examples
+
+```bash
+# All three categories at once
+gmgn-cli market trenches --chain eth --raw \
+  --type new_creation --type near_completion --type completed \
+  --launchpad-platform trench --launchpad-platform clanker --launchpad-platform klik --launchpad-platform livo --launchpad-platform stroid --launchpad-platform pool_uniswap_v2 --launchpad-platform pool_uniswap_v3 --launchpad-platform printr \
+  --limit 80
+
+# New creation only
+gmgn-cli market trenches --chain eth --raw \
+  --type new_creation \
+  --launchpad-platform trench --launchpad-platform clanker --launchpad-platform klik --launchpad-platform livo --launchpad-platform stroid --launchpad-platform pool_uniswap_v2 --launchpad-platform pool_uniswap_v3 --launchpad-platform printr \
+  --limit 80
+
+# Completed (open market) only
+gmgn-cli market trenches --chain eth --raw \
+  --type completed \
+  --launchpad-platform trench --launchpad-platform clanker --launchpad-platform klik --launchpad-platform livo --launchpad-platform stroid --launchpad-platform pool_uniswap_v2 --launchpad-platform pool_uniswap_v3 --launchpad-platform printr \
+  --limit 80
+```
+
+### Arc Trenches Examples
+
+```bash
+# All three categories at once
+gmgn-cli market trenches --chain arc --raw \
+  --type new_creation --type near_completion --type completed \
+  --launchpad-platform dyorfun_v3 --launchpad-platform dyorswap --launchpad-platform trench --launchpad-platform onmifun --launchpad-platform sharcfun --launchpad-platform klik \
+  --limit 80
+
+# New creation only
+gmgn-cli market trenches --chain arc --raw \
+  --type new_creation \
+  --launchpad-platform dyorfun_v3 --launchpad-platform dyorswap --launchpad-platform trench --launchpad-platform onmifun --launchpad-platform sharcfun --launchpad-platform klik \
+  --limit 80
+
+# Near completion only
+gmgn-cli market trenches --chain arc --raw \
+  --type near_completion \
+  --launchpad-platform dyorfun_v3 --launchpad-platform dyorswap --launchpad-platform trench --launchpad-platform onmifun --launchpad-platform sharcfun --launchpad-platform klik \
+  --limit 80
+
+# Completed (open market) only
+gmgn-cli market trenches --chain arc --raw \
+  --type completed \
+  --launchpad-platform dyorfun_v3 --launchpad-platform dyorswap --launchpad-platform trench --launchpad-platform onmifun --launchpad-platform sharcfun --launchpad-platform klik \
+  --limit 80
+```
+
+### Stable Trenches Examples
+
+```bash
+# All three categories at once
+gmgn-cli market trenches --chain stable --raw \
+  --type new_creation --type near_completion --type completed \
+  --launchpad-platform dyorfun_v3 --launchpad-platform dyorswap --launchpad-platform trench \
+  --limit 80
+
+# New creation only
+gmgn-cli market trenches --chain stable --raw \
+  --type new_creation \
+  --launchpad-platform dyorfun_v3 --launchpad-platform dyorswap --launchpad-platform trench \
+  --limit 80
+
+# Near completion only
+gmgn-cli market trenches --chain stable --raw \
+  --type near_completion \
+  --launchpad-platform dyorfun_v3 --launchpad-platform dyorswap --launchpad-platform trench \
+  --limit 80
+
+# Completed (open market) only
+gmgn-cli market trenches --chain stable --raw \
+  --type completed \
+  --launchpad-platform dyorfun_v3 --launchpad-platform dyorswap --launchpad-platform trench \
   --limit 80
 ```
 
@@ -840,7 +985,7 @@ Present each category separately with a header:
 
 ## `market signal` Parameters
 
-Chains: `sol` / `bsc` only. **Maximum 50 results per group** — use multiple groups via `--groups` to cover different signal types in a single request.
+Chains: `sol` / `bsc` / `robinhood` / `arc` / `stable` only. **Maximum 50 results per group** — use multiple groups via `--groups` to cover different signal types in a single request.
 
 **Single-group (individual flags):**
 
@@ -849,7 +994,7 @@ Do **not** pass signal types **14, 15, or 16** in `signal_type` / `--signal-type
 | Option | Required | Description |
 |--------|----------|-------------|
 | `--chain` | Yes | `sol` / `bsc` |
-| `--signal-type` | No | Signal type(s), repeatable (1–18, default: all). See Signal Types below. |
+| `--signal-type` | No | Signal type(s), repeatable (1–21, default: all). See Signal Types below. |
 | `--mc-min` | No | Min market cap at trigger time (USD) |
 | `--mc-max` | No | Max market cap at trigger time (USD) |
 | `--trigger-mc-min` | No | Min market cap at signal trigger moment (USD) |
@@ -890,6 +1035,9 @@ gmgn-cli market signal --chain sol \
 | 16 | SignalTypeMultiLargeBuy | Multiple large buys |
 | 17 | SignalTypeBagsClaims | Bags Claim |
 | 18 | SignalTypePumpClaims | Pump Claim |
+| 19 | SignalTypePlatformCallV2 | Platform call (V2) |
+| 20 | SignalTypeKOLBuy | KOL buy |
+| 21 | SignalTypeBankerClaims | Banker Claim (Base chain Banker platform claim fee) |
 
 ### `market signal` Response Fields
 
@@ -899,7 +1047,7 @@ Each item in the response array is one signal event:
 |-------|------|-------------|
 | `id` | string | Signal event ID |
 | `token_address` | string | Token contract address |
-| `signal_type` | number | Signal type (1–18, see Signal Types above) |
+| `signal_type` | number | Signal type (1–21, see Signal Types above) |
 | `trigger_at` | number | Unix timestamp (seconds) when the signal was triggered |
 | `trigger_mc` | number | Market cap at signal trigger time (USD) |
 | `first_trigger_mc` | number | Market cap at the very first trigger for this token (USD) |
@@ -944,12 +1092,158 @@ gmgn-cli market signal --chain sol \
   --groups '[{"signal_type":[12,13],"mc_min":100000},{"signal_type":[6,7],"mc_min":50000,"mc_max":1000000}]' --raw
 ```
 
+## `market hot-searches` Parameters
+
+Returns the hot-search ranking — the tokens people are searching for most right now, ranked by `visiting_count` (search heat). Cross-chain top-500 ranking; one request can cover several chains at once. **Use this for "most searched tokens", "hot search list", "热搜榜", "what is everyone looking at"** — this is distinct from `market trending` (ranked by swap activity), which answers "what is being traded most."
+
+| Option | Description |
+|--------|-------------|
+| `--chain <chain...>` | Repeatable. `sol` / `bsc` / `base` / `eth` / `robinhood` / `arc` / `stable`. **Omit to query the default 7-chain set** (sol / bsc / base / eth / robinhood / arc / stable, each at `24h` with chain-appropriate safety filters). |
+| `--interval <interval>` | `1m` / `5m` / `1h` / `6h` / `24h` (default `24h`). Applies to every `--chain` provided. |
+| `--limit <n>` | Max results per chain (default `500`). |
+| `--filter <tag...>` | Repeatable **boolean** filter tags (the downstream `filter.filters` array). **⚠️ SOL defaults: `renounced frozen`; EVM defaults: `not_honeypot verified renounced`.** Omitting `--filter` is NOT "no filter" — the server applies chain defaults. See the Filter Tags table below for the exact vocabulary. |
+| `--min-* / --max-* <n>` | Numeric range bounds, **same metric names as `market trending`** (e.g. `--min-liquidity`, `--max-marketcap`, `--min-smart-degen-count`). Translated server-side per `--interval`. `--min-created` / `--max-created` are token-age durations. See the Range Filters table below. |
+| `--params <json>` | Full override: a JSON array of param objects. When provided, `--chain` / `--interval` / `--limit` / `--filter` and all range flags are ignored. Filter fields are **flattened onto each param** (no nested `filter` object): `{ "label": "...", "chain": "...", "interval": "...", "filters": [...], "limit": 500, "min_liquidity": 1000 }` — a param accepts `filters`, `limit`, `min_created`/`max_created`, and rank-style `min_<metric>`/`max_<metric>` keys. |
+
+### `market hot-searches` Filter Tags (`--filter` / `filter.filters`)
+
+The downstream (gmgn rank filter-service) evaluates each tag as an AND condition — a token must pass **every** tag to stay in the list. **Unknown tags are silently accepted but do nothing** (pass-through), so an unrecognised tag will NOT filter anything — spelling matters. This tag set is the filter-service vocabulary and differs slightly from `market trending`'s tag names (see the alias note below).
+
+**These are the only recognised tags** (anything else is a no-op):
+
+| Tag | Chains | Passes when |
+|----------------------|-------------|-------------|
+| `renounced` | sol / EVM | sol: mint authority renounced (`renounced_mint == 1`); EVM: owner renounced (`is_renounced == 1`; lenient — nil passes) |
+| `frozen` | sol only | freeze authority renounced (`renounced_freeze_account == 1`); non-sol always fails |
+| `is_burnt` | all | LP pool burned (`burn_status == "burn"`) |
+| `token_burnt` | all | creator burned tokens (`dev_token_burn_ratio > 0`) |
+| `not_wash_trading` | all | not flagged as wash trading |
+| `not_honeypot` | EVM | not a honeypot (`is_honeypot == 0`; lenient — nil passes) |
+| `verified` | EVM | contract open-source (`is_open_source == 1`; lenient — nil passes) |
+| `locked` | EVM | liquidity locked ≥ 50% (`lock_percent >= 0.5`) |
+| `has_social` | all | has Twitter, Telegram, or Website |
+| `distribed` | all | top-10 holder rate in (0, 0.3] (well distributed) |
+| `not_risk` | all | composite low-risk filter (sol: liquidity≥4000 + mint renounced + top10<0.3 + freeze renounced + LP burned; EVM: not honeypot + liquidity≥4000 + open-source + renounced + lock≥0.5) |
+| `img_not_duplicate` | all | avatar image not duplicated (`image_dup == "0"`) |
+| `social_not_duplicate` | all | social links not shared (`twitter_dup == 0 && telegram_dup == 0 && website_dup == 0`) |
+| `creator_hold` | all | dev still holding (not `creator_close`) |
+| `creator_close` | all | dev sold/closed (`creator_token_status == "creator_close"`) |
+| `dexscr_update_link` | all | social links updated on DexScreener (`> 0`) |
+| `launching` | all | still on the launchpad bonding curve (`launchpad_status == "0"`); pair with `migrated` to allow both |
+| `migrated` | all | graduated / migrated to DEX (`launchpad_status == "1"`); pair with `launching` to allow both |
+| `hide_b20` | base only | token standard is not `b20` (no-op on non-base) |
+| `hide_non_b20` | base only | token standard is `b20` (no-op on non-base) |
+
+> **⚠️ Different names than `market trending`.** This path uses `launching` / `migrated` (NOT `is_internal_market` / `is_out_market`) and `img_not_duplicate` / `social_not_duplicate` (NOT `not_image_dup` / `not_social_dup`). Tags that `market trending` supports but this endpoint does **not** recognise (they become silent no-ops here): `dexscr_ad`, `dexscr_trending_bar`, `dexscr_boost`, `cto_flag`, `is_internal_market`, `is_out_market`, `not_image_dup`, `not_social_dup`.
+
+### `market hot-searches` Range Filters (`--min-*` / `--max-*`)
+
+Numeric bounds use the **same rank-style metric names as `market trending`**. They are sent flattened on each param and translated server-side to the downstream field for the param's `--interval`. Closed intervals; metrics the downstream cannot read are dropped (not silent no-ops on the wire — they are removed before the request).
+
+| Flag pair | Type | Metric |
+|------------------------------------------------------------|----------|--------|
+| `--min-volume` / `--max-volume` | float | Trading volume (USD) — bound to the `--interval` window |
+| `--min-swaps` / `--max-swaps` | int | Swap count — bound to the `--interval` window |
+| `--min-price-change-percent` / `--max-price-change-percent` | float | Price change ratio — **only `1m` / `5m` / `1h`; dropped for `6h` / `24h`** |
+| `--min-liquidity` / `--max-liquidity` | float | Liquidity (USD) |
+| `--min-marketcap` / `--max-marketcap` | float | Market cap (USD) |
+| `--min-history-highest-marketcap` / `--max-history-highest-marketcap` | float | All-time-high market cap (USD) |
+| `--min-holder-count` / `--max-holder-count` | int | Holder count |
+| `--min-gas-fee` / `--max-gas-fee` | float | Gas fee |
+| `--min-renowned-count` / `--max-renowned-count` | int | KOL / renowned holder count |
+| `--min-smart-degen-count` / `--max-smart-degen-count` | int | Smart-money holder count |
+| `--min-bot-degen-count` / `--max-bot-degen-count` | int | Bot-degen wallet count |
+| `--min-visiting-count` / `--max-visiting-count` | int | Visitor count |
+| `--min-insider-rate` / `--max-insider-rate` | float | Insider trading ratio (0–1); tokens lacking this field are excluded |
+| `--min-bundler-rate` / `--max-bundler-rate` | float | Bundle-bot trading ratio (0–1); tokens lacking this field are excluded |
+| `--min-entrapment-ratio` / `--max-entrapment-ratio` | float | Entrapment trading ratio (0–1); tokens lacking this field are excluded |
+| `--min-top10-holder-rate` / `--max-top10-holder-rate` | float | Top-10 holder concentration (0–1) |
+| `--min-top70-sniper-hold-rate` / `--max-top70-sniper-hold-rate` | float | Top-70 sniper holding ratio (0–1) |
+| `--min-dev-team-hold-rate` / `--max-dev-team-hold-rate` | float | Dev-team holding ratio (0–1) |
+| `--min-created` / `--max-created` | duration | Token age window (`30m` / `6h` / `7d`). `min_created` = minimum age; `max_created` = maximum age |
+
+**Notes on behaviour:**
+
+- `--chain all` is **not** valid. To aggregate across chains, pass `--chain` multiple times (or omit `--chain` for the default 7-chain set).
+- When you pass `--chain` but omit `--filter`, the **server** applies the chain-appropriate default filters — so each chain is filtered even without an explicit `--filter`.
+- Different chains return different counts: a chain's token count depends on how many of its tokens made the global top-500 (sol is usually the largest).
+
+## `market hot-searches` Response Fields
+
+The response `data` is an array. Each element is one `(interval, chain)` result block:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `interval` | string | The interval for this block |
+| `chain` | string | The chain for this block |
+| `version` | string | Subscription version — persist it for WebSocket reconnect |
+| `tokens` | array | Ranked tokens (search heat desc), max 500. Each token carries a 1-based `rank` |
+
+**Token fields are the same long-form fields as `market trending`** — the server maps the upstream shortcodes for you, so you read `visiting_count` / `market_cap` / `symbol` directly (NOT `v_c` / `mc` / `s`). Key fields:
+
+| Field | Description |
+|-------|-------------|
+| `address` | Token contract address |
+| `chain` | Chain |
+| `name` / `symbol` | Token name / ticker |
+| `price` | Current price (USD) |
+| `visiting_count` | **Primary ranking key — search / visit heat** |
+| `market_cap` | Market cap (USD) |
+| `volume` | Volume in this interval (USD) |
+| `liquidity` | Liquidity (USD) |
+| `swaps` / `buys` / `sells` | Swap / buy / sell counts |
+| `holder_count` | Holder count |
+| `rank` | 1-based position within the block |
+
+See the [`market trending` Response Fields](#market-trending-response-fields) section above for the full field set — hot-searches tokens use the identical `RankItem` shape.
+
+### `market hot-searches` Usage Examples
+
+```bash
+# Default 7-chain hot-search ranking (sol/bsc/base/eth/robinhood/arc/stable, each 24h)
+gmgn-cli market hot-searches --raw
+
+# SOL only, 24h hot-search list
+gmgn-cli market hot-searches --chain sol --interval 24h --raw
+
+# SOL + BSC + Base, 1h window, top 50 per chain
+gmgn-cli market hot-searches --chain sol --chain bsc --chain base --interval 1h --limit 50 --raw
+
+# SOL with custom boolean filters
+gmgn-cli market hot-searches --chain sol --interval 24h \
+  --filter renounced --filter frozen --raw
+
+# SOL 1h hot-searches with numeric range filters (same metric names as `market trending`)
+gmgn-cli market hot-searches --chain sol --interval 1h \
+  --min-liquidity 10000 --min-volume 5000 --min-smart-degen-count 1 --raw
+
+# Range filter by token age + market cap
+gmgn-cli market hot-searches --chain sol --interval 24h \
+  --max-created 7d --min-marketcap 50000 --raw
+
+# Full per-param override via JSON (different filters per chain, incl. ranges)
+gmgn-cli market hot-searches --raw --params '[
+  {"label":"hot-search","chain":"sol","interval":"24h","filters":["renounced","frozen"],"limit":500,"min_liquidity":10000},
+  {"label":"hot-search","chain":"bsc","interval":"24h","filters":["not_honeypot","verified","renounced"],"limit":500}
+]'
+```
+
+### `market hot-searches` — Output Format
+
+Present per chain, ranked by `visiting_count` (search heat):
+
+```
+🔥 Hot Searches — {chain} ({interval})
+# | Symbol | Price | MCap | Volume | Search Heat (visiting_count) | Liq
+```
+
 ---
 
 ## Notes
 
 - `market kline`: `--from` and `--to` are Unix timestamps in **seconds** — CLI converts to milliseconds automatically
 - `market trending`: `--filter` and `--platform` are repeatable flags
+- `market hot-searches`: `--chain` and `--filter` are repeatable flags; omit `--chain` to query the default 7-chain set. `--min-*`/`--max-*` range flags reuse the same metric names as `market trending` and are translated server-side per `--interval`
 - All commands use exist auth (API Key only, no signature)
 - If the user doesn't provide kline timestamps, calculate them from the current time based on their desired time range
 - Use `--raw` to get single-line JSON for further processing

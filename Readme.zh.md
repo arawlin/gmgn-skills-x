@@ -99,6 +99,7 @@ SOL / BSC / Base / ETH 多链数据每次查询均为实时，支持多参数个
 | [`/gmgn-token`](skills/gmgn-token/SKILL.md) | Token 信息、安全、池子、持有者、交易者 | [SKILL.md](skills/gmgn-token/SKILL.md) |
 | [`/gmgn-market`](skills/gmgn-market/SKILL.md) | K 线行情数据、热门代币 | [SKILL.md](skills/gmgn-market/SKILL.md) |
 | [`/gmgn-portfolio`](skills/gmgn-portfolio/SKILL.md) | 钱包持仓、活动、统计 | [SKILL.md](skills/gmgn-portfolio/SKILL.md) |
+| [`/gmgn-wallet-score`](skills/gmgn-wallet-score/SKILL.md) | 钱包跟单评分——真实战绩分、可跟单分、跟单回测、Dev 信誉分 | [SKILL.md](skills/gmgn-wallet-score/SKILL.md) |
 | [`/gmgn-track`](skills/gmgn-track/SKILL.md) | 追踪关注钱包交易动态、KOL 交易动态、聪明钱交易动态 | [SKILL.md](skills/gmgn-track/SKILL.md) |
 | [`/gmgn-swap`](skills/gmgn-swap/SKILL.md) | 兑换提交 + 限价单 + 策略单 + 订单查询 | [SKILL.md](skills/gmgn-swap/SKILL.md) |
 | [`/gmgn-cooking`](skills/gmgn-cooking/SKILL.md) | 一键 Cooking 策略单（买入 + 止盈止损条件单一体化） | [SKILL.md](skills/gmgn-cooking/SKILL.md) |
@@ -354,7 +355,7 @@ cp .env.example .env
    ```bash
    echo "$(npm root -g)/gmgn-skills/skills"
    ```
-3. 重启 Cline — `/gmgn-token`、`/gmgn-market`、`/gmgn-portfolio`、`/gmgn-track`、`/gmgn-swap`、`/gmgn-cooking` 即可使用
+3. 重启 Cline — `/gmgn-token`、`/gmgn-market`、`/gmgn-portfolio`、`/gmgn-wallet-score`、`/gmgn-track`、`/gmgn-swap`、`/gmgn-cooking` 即可使用
 
 #### Codex CLI
 
@@ -491,6 +492,13 @@ gmgn-cli market trending \
   --order-by volume --limit 20 \
   --filter not_risk --filter not_honeypot
 
+# 热门榜 + 数值范围过滤（min_*/max_* 以查询参数透传）
+gmgn-cli market trending \
+  --chain sol --interval 1h \
+  --min-liquidity 10000 --max-liquidity 1000000 \
+  --max-created 30m --min-smart-degen-count 1 \
+  --order-by volume --limit 30
+
 # 战壕新币列表
 gmgn-cli market trenches \
   --chain sol \
@@ -502,6 +510,16 @@ gmgn-cli market trenches \
 gmgn-cli market trenches \
   --chain sol --type new_creation \
   --filter-preset safe --min-smart-degen-count 1 --sort-by smart_degen_count
+
+# 热搜榜——搜索热度最高的代币（默认 7 链，24h）
+gmgn-cli market hot-searches --raw
+
+# 热搜榜——仅 SOL，1h 档，前 50
+gmgn-cli market hot-searches --chain sol --interval 1h --limit 50 --raw
+
+# 热搜榜——SOL 数值范围过滤（指标名与 trending 一致）
+gmgn-cli market hot-searches --chain sol --interval 1h \
+  --min-liquidity 10000 --min-smart-degen-count 1 --raw
 ```
 
 ### Portfolio
@@ -529,6 +547,9 @@ gmgn-cli portfolio created-tokens --chain sol --wallet <addr>
 ### Track
 
 ```bash
+# 查询钱包收藏的代币列表
+gmgn-cli track follow-tokens --chain sol --wallet <wallet_address>
+
 # 追踪关注钱包的交易动态
 gmgn-cli track follow-wallet --chain sol
 gmgn-cli track follow-wallet --chain sol --limit 20 --min-amount-usd 1000
@@ -543,6 +564,8 @@ gmgn-cli track smartmoney --chain sol --side sell --limit 50 --raw
 ```
 
 ### Swap / Quote / Query
+
+> **人工确认由代码强制执行。** `swap`、`multi-swap`、`order strategy create`、`cooking create` 在执行前会在终端要求输入 `yes` 确认。若需非交互/自动化使用，必须同时在 shell 中设置 `GMGN_ALLOW_AUTOMATED_TRADES=1` 并传入 `--yes`；仅传 `--yes` 会被拒绝。此举可防止 AI agent 被恶意代币元数据等诱导在未经你同意的情况下下单。
 
 ```bash
 # 提交兑换（固定滑点）
@@ -730,9 +753,11 @@ gmgn-cli cooking \
 
 | 接口类型 | 支持的链 | 链原生货币 |
 |----------|----------|-----------|
-| token / market / portfolio / track | `sol` / `bsc` / `base` / `eth` | — |
-| swap / order | `sol` / `bsc` / `base` / `eth` | sol: SOL、USDC · bsc: BNB、USDC · base: ETH、USDC · eth: ETH |
-| gas-price | `sol` / `bsc` / `base` / `eth` | — |
+| token / market / portfolio / track | `sol` / `bsc` / `base` / `eth` / `robinhood` / `arc` / `stable` | — |
+| swap / order | `sol` / `bsc` / `base` / `eth` / `robinhood` / `arc` / `stable` | sol: SOL、USDC · bsc: BNB、USDC · base: ETH、USDC · eth: ETH |
+| gas-price | `sol` / `bsc` / `base` / `eth` / `robinhood` / `arc` / `stable` | — |
+| track kol / track smartmoney · market signal | `sol` / `bsc` / `base` / `eth` / `robinhood` / `arc` / `stable`（kol/smartmoney）· `sol` / `bsc` / `robinhood` / `arc` / `stable`（signal） | — |
+| cooking create | `sol` / `bsc` / `base` / `robinhood` | — |
 
 ---
 

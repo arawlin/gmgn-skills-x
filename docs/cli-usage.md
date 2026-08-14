@@ -101,7 +101,7 @@ npx gmgn-cli market kline \
 |--------|----------|-------------|
 | `--chain` | Yes | `sol` / `bsc` / `base` |
 | `--address` | Yes | Token contract address |
-| `--resolution` | Yes | Candlestick resolution: `1m` / `5m` / `15m` / `1h` / `4h` / `1d` |
+| `--resolution` | Yes | Candlestick resolution: `30s` / `1m` / `5m` / `15m` / `1h` / `4h` / `1d` |
 | `--from` | No | Start time (Unix seconds) |
 | `--to` | No | End time (Unix seconds) |
 
@@ -120,24 +120,29 @@ npx gmgn-cli market trending \
   [--direction asc|desc] \
   [--filter <tag>] \
   [--platform <name>] \
+  [--min-<metric> <n>] [--max-<metric> <n>] \
   [--raw]
 ```
 
 | Option | Required | Description |
 |--------|----------|-------------|
-| `--chain` | Yes | `sol` / `bsc` / `base` |
-| `--interval` | Yes | `1h` / `3h` / `6h` / `24h` |
+| `--chain` | Yes | `sol` / `bsc` / `base` / `eth` / `robinhood` / `arc` / `stable` |
+| `--interval` | Yes | `1m` / `5m` / `1h` / `6h` / `24h` |
 | `--limit` | No | Number of results (default 100, max 100) |
 | `--order-by` | No | Sort field: `volume` / `swaps` / `liquidity` / `marketcap` / `holders` / `price` / `change` / `change1m` / `change5m` / `change1h` / `renowned_count` / `smart_degen_count` / `bluechip_owner_percentage` / `rank` / `creation_timestamp` / `square_mentions` / `history_highest_market_cap` / `gas_fee` |
 | `--direction` | No | Sort direction: `asc` / `desc` (default `desc`) |
-| `--filter` | No | Filter tag (repeatable): `has_social` / `not_risk` / `not_honeypot` / `verified` / `locked` / `renounced` / `distributed` / `frozen` / `burn` / `token_burnt` / `creator_hold` / `creator_close` / `creator_add_liquidity` / `creator_remove_liquidity` / `creator_sell` / `creator_buy` / `not_wash_trading` / `not_social_dup` / `not_image_dup` / `is_internal_market` / `is_out_market` |
+| `--filter` | No | Filter tag (repeatable): `has_social` / `not_risk` / `not_honeypot` / `verified` / `locked` / `renounced` / `distributed` / `frozen` / `burn` / `token_burnt` / `creator_hold` / `creator_close` / `creator_add_liquidity` / `creator_remove_liquidity` / `creator_sell` / `creator_buy` / `not_wash_trading` / `not_social_dup` / `not_image_dup` / `is_internal_market` / `is_out_market`. The gmgn web client also sends aliases `social_not_duplicate` / `img_not_duplicate` / `is_burnt` / `launching` / `migrated`, which are accepted but only the canonical tags change behavior. |
 | `--platform` | No | Platform filter (repeatable). Omit (or pass an empty list) to include **all** platforms. Available values depend on chain — see below. |
+| `--min-<metric>` / `--max-<metric>` | No | Numeric range filters (inclusive). Supported metrics: `volume` / `liquidity` / `marketcap` / `history-highest-marketcap` / `swaps` / `holder-count` / `gas-fee` / `renowned-count` / `smart-degen-count` / `bot-degen-count` / `visiting-count` / `price-change-percent` / `insider-rate` / `bundler-rate` / `entrapment-ratio` / `top10-holder-rate` / `top70-sniper-hold-rate` / `dev-team-hold-rate`. Unknown metrics are ignored by the service. |
+| `--min-created` / `--max-created` | No | Token-age window, duration string with a `m` (minutes) / `h` (hours) / `d` (days) suffix, e.g. `30m` / `6h` / `7d`. `--min-created` is a minimum age (excludes younger tokens); `--max-created` a maximum age (excludes older tokens). The raw upstream rank interface accepts minutes only; the openapi-service does not forward this field — it evaluates the age window itself (cutoff = now − duration, native for `m`/`h`/`d`), so `6h`/`7d` work here. A bare number with no unit suffix is not accepted. |
 
 **`sol` platforms:** `Pump.fun` / `pump_mayhem` / `pump_mayhem_agent` / `pump_agent` / `letsbonk` / `bonkers` / `bags` / `memoo` / `liquid` / `bankr` / `zora` / `surge` / `anoncoin` / `moonshot_app` / `wendotdev` / `heaven` / `sugar` / `token_mill` / `believe` / `trendsfun` / `trends_fun` / `jup_studio` / `Moonshot` / `boop` / `xstocks` / `ray_launchpad` / `meteora_virtual_curve` / `pool_ray` / `pool_meteora` / `pool_pump_amm` / `pool_orca`
 
 **`bsc` platforms:** `fourmeme` / `fourmeme_agent` / `bn_fourmeme` / `flap` / `clanker` / `lunafun` / `pool_uniswap` / `pool_pancake`
 
 **`base` platforms:** `clanker` / `bankr` / `flaunch` / `zora` / `zora_creator` / `baseapp` / `basememe` / `virtuals_v2` / `klik`
+
+**`eth` platforms:** `trench` / `clanker` / `klik` / `livo` / `stroid` / `pool_uniswap_v2` / `pool_uniswap_v3` / `printr`
 
 ---
 
@@ -289,10 +294,18 @@ npx gmgn-cli market trenches --chain <chain> [--type <type...>] [--launchpad-pla
 
 | Option | Required | Description |
 |--------|----------|-------------|
-| `--chain` | Yes | `sol` / `bsc` / `base` |
+| `--chain` | Yes | `sol` / `bsc` / `base` / `eth` / `robinhood` / `arc` / `stable` |
 | `--type` | No | Categories to query, repeatable: `new_creation` / `near_completion` / `completed` (default: all three) |
-| `--launchpad-platform` | No | Launchpad platform filter, repeatable (default: all platforms for the chain) |
+| `--launchpad-platform` | No | Launchpad platform filter, repeatable (default: all platforms for the chain). Values depend on chain — see below. |
 | `--limit` | No | Max results per category, max 80 (default: 80) |
+
+**`sol` platforms:** `Pump.fun` / `pump_mayhem` / `pump_mayhem_agent` / `pump_agent` / `letsbonk` / `bonkers` / `bags` / `memoo` / `liquid` / `bankr` / `zora` / `surge` / `anoncoin` / `moonshot_app` / `wendotdev` / `heaven` / `sugar` / `token_mill` / `believe` / `trendsfun` / `trends_fun` / `jup_studio` / `Moonshot` / `boop` / `ray_launchpad` / `meteora_virtual_curve` / `xstocks`
+
+**`bsc` platforms:** `fourmeme` / `fourmeme_agent` / `bn_fourmeme` / `four_xmode_agent` / `cubepeg` / `likwid` / `goplus_creator` / `goplus_skills` / `openfour` / `flap` / `flap_stocks` / `flap_aioracle` / `clanker` / `lunafun`
+
+**`base` platforms:** `clanker` / `bankr` / `flaunch` / `zora` / `zora_creator` / `baseapp` / `basememe` / `virtuals_v2` / `klik`
+
+**`eth` platforms:** `trench` / `clanker` / `klik` / `livo` / `stroid` / `pool_uniswap_v2` / `pool_uniswap_v3` / `printr`
 
 **Response:** `data.new_creation`, `data.pump`, `data.completed` — each is an array of `RankItem` (same structure as `market trending` rank items). **Note: `data.pump` in the response corresponds to `--type near_completion` in the request. The API always returns this category under the key `pump`, not `near_completion`.**
 
@@ -312,8 +325,8 @@ gmgn-cli market signal --chain sol --groups '<json_array>' [--raw]
 
 | Option | Required | Description |
 |--------|----------|-------------|
-| `--chain` | Yes | `sol` / `bsc` |
-| `--signal-type` | No | Signal type(s), repeatable (1–18, default: all). See Signal Types below. |
+| `--chain` | Yes | `sol` / `bsc` / `robinhood` / `arc` / `stable` |
+| `--signal-type` | No | Signal type(s), repeatable (1–21, default: all). See Signal Types below. |
 | `--mc-min` | No | Min market cap at trigger time (USD) |
 | `--mc-max` | No | Max market cap at trigger time (USD) |
 | `--trigger-mc-min` | No | Min market cap at signal trigger moment (USD) |
@@ -346,6 +359,85 @@ gmgn-cli market signal --chain sol --groups '<json_array>' [--raw]
 | 16 | SignalTypeMultiLargeBuy | Multiple large buys |
 | 17 | SignalTypeBagsClaims | Bags Claim |
 | 18 | SignalTypePumpClaims | Pump Claim |
+| 19 | SignalTypePlatformCallV2 | Platform call (V2) |
+| 20 | SignalTypeKOLBuy | KOL buy |
+| 21 | SignalTypeBankerClaims | Banker Claim (Base chain Banker platform claim fee) |
+
+---
+
+## market hot-searches
+
+Query the hot-search ranking — the most-searched tokens, ranked by `visiting_count` (search heat). Cross-chain top-500; one request can cover several chains at once. API Key auth only.
+
+```bash
+# Default 7-chain set (sol/bsc/base/eth/robinhood/arc/stable, each 24h):
+gmgn-cli market hot-searches [--raw]
+
+# Specific chain(s) and interval:
+gmgn-cli market hot-searches --chain <chain...> [--interval <1m|5m|1h|6h|24h>] [--limit <n>] [--filter <tag...>] [--min-* <n>] [--max-* <n>] [--raw]
+
+# Full per-param override (JSON array):
+gmgn-cli market hot-searches --params '<json_array>' [--raw]
+```
+
+| Option | Required | Description |
+|--------|----------|-------------|
+| `--chain` | No | Repeatable: `sol` / `bsc` / `base` / `eth` / `robinhood` / `arc` / `stable`. Omit for the default 7-chain set. |
+| `--interval` | No | `1m` / `5m` / `1h` / `6h` / `24h` (default `24h`). Applies to every `--chain`. |
+| `--limit` | No | Max results per chain (default `500`). |
+| `--filter` | No | Repeatable **boolean** filter tags (downstream `filter.filters`). sol defaults: `renounced` / `frozen`; EVM defaults: `not_honeypot` / `verified` / `renounced`. Recognised tags: `renounced` / `frozen` (sol) / `is_burnt` / `token_burnt` / `not_wash_trading` / `not_honeypot` (EVM) / `verified` (EVM) / `locked` (EVM) / `has_social` / `distribed` / `not_risk` / `img_not_duplicate` / `social_not_duplicate` / `creator_hold` / `creator_close` / `dexscr_update_link` / `launching` / `migrated` / `hide_b20` (base) / `hide_non_b20` (base). Unknown tags are silent no-ops. |
+| `--min-*` / `--max-*` | No | Numeric range bounds, **same metric names as `market trending`** (`--min-liquidity`, `--max-marketcap`, `--min-volume`, `--min-swaps`, `--min-smart-degen-count`, …, plus `--min-created`/`--max-created` durations). Translated server-side per `--interval`. `price_change_percent` only applies to `1m`/`5m`/`1h`. |
+| `--params` | No | Full JSON array override — overrides `--chain` / `--interval` / `--limit` / `--filter` and range flags when provided. Filter fields are flattened onto each param (no nested `filter` object): a param accepts `filters`, `limit`, `min_created`/`max_created`, and rank-style `min_<metric>`/`max_<metric>` keys. |
+
+**Response:** `data` is an array of `(interval, chain)` blocks; each block has `interval`, `chain`, `version`, and `tokens`. `tokens` uses the **same long-form fields as `market trending`** (`address`, `symbol`, `visiting_count`, `market_cap`, …) — the server maps the upstream shortcodes for you — and each token carries a 1-based `rank`. Ranked by search heat (`visiting_count`), max 500 per chain. **Note:** `--chain all` is not valid — pass `--chain` multiple times to aggregate across chains. Boolean tag names differ from `market trending`: this path uses `launching`/`migrated` and `img_not_duplicate`/`social_not_duplicate`.
+
+---
+
+## track follow-tokens
+
+Query the followed token list for a wallet. Returns a paginated list of tokens the wallet has bookmarked on GMGN, with full market data. API Key auth only.
+
+```bash
+gmgn-cli track follow-tokens \
+  --chain <chain> \
+  --wallet <wallet_address> \
+  [--group-id <id>] \
+  [--order-by <field>] \
+  [--direction <asc|desc>] \
+  [--limit <n>] \
+  [--cursor <cursor>] \
+  [--raw]
+```
+
+| Option | Required | Description |
+|--------|----------|-------------|
+| `--chain` | Yes | `sol` / `bsc` / `base` / `eth` / `robinhood` / `arc` / `stable` |
+| `--wallet` | Yes | Wallet address |
+| `--group-id` | No | `all_group` (all tokens), `default`, or a user-defined group ID |
+| `--interval` | No | Time interval for price change stats: `1m` / `5m` / `1h` / `6h` / `24h` |
+| `--order-by` | No | `created_at` / `swaps` / `volume` / `market_cap` / `liquidity` / `price` / `open_timestamp` |
+| `--direction` | No | Sort direction: `asc` / `desc` |
+| `--limit` | No | Page size |
+| `--cursor` | No | Pagination cursor from previous response |
+| `--search` | No | Search by token name or address |
+
+---
+
+## track follow-token-groups
+
+Query the follow token group names for a wallet. Returns the groups a wallet uses to organise its followed tokens on GMGN. API Key auth only.
+
+```bash
+gmgn-cli track follow-token-groups \
+  --chain <chain> \
+  --wallet <wallet_address> \
+  [--raw]
+```
+
+| Option | Required | Description |
+|--------|----------|-------------|
+| `--chain` | Yes | `sol` / `bsc` / `base` / `eth` / `robinhood` / `arc` / `stable` |
+| `--wallet` | Yes | Wallet address |
 
 ---
 
@@ -387,7 +479,7 @@ gmgn-cli track kol [--chain <chain>] [--limit <n>] [--side <side>] [--raw]
 
 | Option | Required | Description |
 |--------|----------|-------------|
-| `--chain` | No | `sol` / `bsc` / `base` (default `sol`) |
+| `--chain` | No | `sol` / `bsc` / `base` / `eth` / `robinhood` / `arc` / `stable` (default `sol`) |
 | `--limit` | No | Page size (1–200, default 100) |
 | `--side` | No | Filter by trade direction: `buy` / `sell` (client-side filter) |
 
@@ -403,7 +495,7 @@ gmgn-cli track smartmoney [--chain <chain>] [--limit <n>] [--side <side>] [--raw
 
 | Option | Required | Description |
 |--------|----------|-------------|
-| `--chain` | No | `sol` / `bsc` / `base` (default `sol`) |
+| `--chain` | No | `sol` / `bsc` / `base` / `eth` / `robinhood` / `arc` / `stable` (default `sol`) |
 | `--limit` | No | Page size (1–200, default 100) |
 | `--side` | No | Filter by trade direction: `buy` / `sell` (client-side filter) |
 
@@ -411,7 +503,7 @@ gmgn-cli track smartmoney [--chain <chain>] [--limit <n>] [--side <side>] [--raw
 
 ## order quote
 
-Get a swap quote without submitting a transaction. All supported quote chains use signed auth and require `GMGN_PRIVATE_KEY`.
+Get a swap quote without submitting a transaction. Uses normal auth — only `GMGN_API_KEY` is required, no `GMGN_PRIVATE_KEY` needed.
 
 ```bash
 npx gmgn-cli order quote \
@@ -426,8 +518,8 @@ npx gmgn-cli order quote \
 
 | Option | Required | Description |
 |--------|----------|-------------|
-| `--chain` | Yes | `sol` / `bsc` / `base` (all require `GMGN_PRIVATE_KEY` for quote) |
-| `--from` | Yes | Wallet address (must match API Key binding) |
+| `--chain` | Yes | `sol` / `bsc` / `base` |
+| `--from` | Yes | Wallet address |
 | `--input-token` | Yes | Input token contract address |
 | `--output-token` | Yes | Output token contract address |
 | `--amount` | Yes | Input amount (smallest unit) |
@@ -473,7 +565,7 @@ npx gmgn-cli swap \
 
 | Option | Required | Chain | Description |
 |--------|----------|-------|-------------|
-| `--chain` | Yes | all | `sol` / `bsc` / `base` / `eth` |
+| `--chain` | Yes | all | `sol` / `bsc` / `base` / `eth` / `robinhood` / `arc` / `stable` |
 | `--from` | Yes | all | Wallet address (must match the wallet bound to the API Key) |
 | `--input-token` | Yes | all | Input token contract address |
 | `--output-token` | Yes | all | Output token contract address |
@@ -490,7 +582,7 @@ npx gmgn-cli swap \
 | `--auto-fee` | No | `eth` | **Only with `--condition-orders`.** GMGN automatically selects the optimal fee. |
 | `--max-fee-per-gas` | No | `bsc` / `base` / `eth` | EIP-1559 max fee per gas |
 | `--max-priority-fee-per-gas` | No | `bsc` / `base` / `eth` | EIP-1559 max priority fee per gas |
-| `--condition-orders` | No | all | JSON array of take-profit/stop-loss conditions attached after a successful swap (see example below) |
+| `--condition-orders` | No | sol / bsc / base / eth / robinhood | JSON array of take-profit/stop-loss conditions attached after a successful swap (see example below). **Not supported on `arc` / `stable`.** |
 | `--sell-ratio-type` | No | all | **Only with `--condition-orders`.** Sell ratio base: `buy_amount` (default) / `hold_amount` |
 
 **`--condition-orders` example** (100% sell at 2× price, 100% sell at 50% price):
@@ -550,7 +642,7 @@ gmgn-cli multi-swap \
 
 | Option | Required | Chain | Description |
 |--------|----------|-------|-------------|
-| `--chain` | Yes | all | `sol` / `bsc` / `base` / `eth` |
+| `--chain` | Yes | all | `sol` / `bsc` / `base` / `eth` / `robinhood` / `arc` / `stable` |
 | `--accounts` | Yes | all | Comma-separated wallet addresses (1–100, all bound to API Key) |
 | `--input-token` | Yes | all | Input token contract address |
 | `--output-token` | Yes | all | Output token contract address |
@@ -567,7 +659,7 @@ gmgn-cli multi-swap \
 | `--auto-fee` | No | `eth` | **Only with `--condition-orders`.** GMGN automatically selects the optimal fee. |
 | `--max-fee-per-gas` | No | `bsc` / `base` / `eth` | EIP-1559 max fee per gas |
 | `--max-priority-fee-per-gas` | No | `bsc` / `base` / `eth` | EIP-1559 max priority fee per gas |
-| `--condition-orders` | No | all | JSON array of take-profit/stop-loss conditions, attached to each successful wallet's swap (best-effort) |
+| `--condition-orders` | No | sol / bsc / base / eth / robinhood | JSON array of take-profit/stop-loss conditions, attached to each successful wallet's swap (best-effort). **Not supported on `arc` / `stable`.** |
 | `--sell-ratio-type` | No | all | **Only with `--condition-orders`.** Sell ratio base: `buy_amount` (default) / `hold_amount` |
 
 **Response fields (data):** Array of per-wallet results:
@@ -593,7 +685,7 @@ npx gmgn-cli order get --chain <chain> --order-id <order_id> [--raw]
 
 | Option | Required | Description |
 |--------|----------|-------------|
-| `--chain` | Yes | `sol` / `bsc` / `base` / `eth` / `monad` |
+| `--chain` | Yes | `sol` / `bsc` / `base` / `eth` / `robinhood` / `arc` / `stable` |
 | `--order-id` | Yes | Order ID (returned by the `swap` command) |
 
 **Response fields (data):** Same structure as the `swap` response above.
@@ -628,11 +720,11 @@ gmgn-cli order strategy create \
 
 | Option | Required | Description |
 |--------|----------|-------------|
-| `--chain` | Yes | `sol` / `bsc` / `base` / `eth` |
+| `--chain` | Yes | `sol` / `bsc` / `base` / `eth` / `robinhood` / `arc` / `stable` |
 | `--from` | Yes | Wallet address (must match API Key binding) |
 | `--base-token` | Yes | Base token contract address |
 | `--quote-token` | Yes | Quote token contract address |
-| `--order-type` | Yes | Order type: `limit_order` / `smart_trade` |
+| `--order-type` | Yes | Order type: `limit_order` / `smart_trade`. **`arc` / `stable` support `limit_order` only** — `smart_trade` returns a 400. |
 | `--sub-order-type` | Yes | `limit_order`: `buy_low` / `buy_high` / `stop_loss` / `take_profit`; `smart_trade` with condition_orders: `mix_trade` |
 | `--check-price` | No* | Trigger check price — required for `limit_order`; omit for `smart_trade` (trigger is in the `buy_low` condition order) |
 | `--open-price` | No | Open price of the position |
@@ -642,7 +734,7 @@ gmgn-cli order strategy create \
 | `--expire-in` | No | Order expiry in seconds |
 | `--sell-ratio-type` | No | `buy_amount` (default) / `hold_amount` |
 | `--quote-investment` | No | Quote token investment amount (`smart_trade`) |
-| `--condition-orders` | No | JSON array of condition sub-orders for `smart_trade`. Must include one `buy_low` entry (with `check_price` lower than `open_price`) plus at least one TP/SL entry |
+| `--condition-orders` | No | JSON array of condition sub-orders for `smart_trade`. Must include one `buy_low` entry (with `check_price` lower than `open_price`) plus at least one TP/SL entry. **Not supported on `arc` / `stable`** (`smart_trade` is rejected there). |
 | `--slippage` | No | Slippage tolerance as an integer 0–100, e.g. `30` = 30% |
 | `--auto-slippage` | No | Enable automatic slippage |
 | `--priority-fee` | No | Priority fee in SOL (**required for SOL chain**) |
@@ -756,8 +848,8 @@ gmgn-cli cooking create \
 
 | Option | Required | Description |
 |--------|----------|-------------|
-| `--chain` | Yes | `sol` / `bsc` / `base` |
-| `--dex` | Yes | Launchpad per chain: `pump` / `bonk` / `bags` (sol), `fourmeme` / `flap` (bsc), `klik` / `clanker` (base) |
+| `--chain` | Yes | `sol` / `bsc` / `base` / `robinhood` |
+| `--dex` | Yes | Launchpad per chain: `pump` / `bonk` / `bags` (sol), `fourmeme` / `flap` (bsc), `klik` / `clanker` (base), `trench` / `pons` (robinhood) |
 | `--from` | Yes | Wallet address (must match API Key binding) |
 | `--name` | Yes | Token name |
 | `--symbol` | Yes | Token symbol |
@@ -777,7 +869,7 @@ gmgn-cli cooking create \
 | `--max-priority-fee-per-gas` | No | Max priority fee per gas in wei (**EVM only**) |
 | `--anti-mev` | No | Enable anti-MEV protection (**SOL only**) |
 | `--anti-mev-mode` | No | Anti-MEV mode: `off` / `normal` / `secure` (**SOL only**) |
-| `--raised-token` | No | Raise token symbol: `pump`→`USDC`; `bonk`→`USD1`; `fourmeme`→`USDT`/`USD1`; omit for native |
+| `--raised-token` | No | Raise token symbol: `pump`→`USDC`; `bonk`→`USD1`; `fourmeme`→`USDT`/`USD1`; `base`/`robinhood`→native only; omit for native |
 | `--dev-wallet-bps` | No | Dev wallet fee share in basis points (100 = 1%) |
 | `--dev-gas` | No | Dev gas amount |
 | `--dev-priority` | No | Dev priority fee |

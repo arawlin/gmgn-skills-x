@@ -20,3 +20,7 @@ dist
 testing/
 
 .github/skills
+# Local Claude Code configs (dev environment only)
+.claude/
+.agents/
+skills-lock.json

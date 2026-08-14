@@ -96,6 +96,7 @@ No more scraping web pages or getting blocked by Cloudflare. Query all the profe
 | [`/gmgn-token`](skills/gmgn-token/SKILL.md) | Token info, security, pool, holders, traders | [SKILL.md](skills/gmgn-token/SKILL.md) |
 | [`/gmgn-market`](skills/gmgn-market/SKILL.md) | K-line market data, trending tokens | [SKILL.md](skills/gmgn-market/SKILL.md) |
 | [`/gmgn-portfolio`](skills/gmgn-portfolio/SKILL.md) | Wallet holdings, activity, stats | [SKILL.md](skills/gmgn-portfolio/SKILL.md) |
+| [`/gmgn-wallet-score`](skills/gmgn-wallet-score/SKILL.md) | Wallet copy-trade scoring — track-record, copy-tradeability, backtest, Dev reputation | [SKILL.md](skills/gmgn-wallet-score/SKILL.md) |
 | [`/gmgn-track`](skills/gmgn-track/SKILL.md) | Follow-wallet trades, KOL trades, Smart Money trades | [SKILL.md](skills/gmgn-track/SKILL.md) |
 | [`/gmgn-swap`](skills/gmgn-swap/SKILL.md) | Swap submission + limit orders + strategy orders + order query | [SKILL.md](skills/gmgn-swap/SKILL.md) |
 | [`/gmgn-cooking`](skills/gmgn-cooking/SKILL.md) | One-command cooking orders (buy + take-profit/stop-loss in a single flow) | [SKILL.md](skills/gmgn-cooking/SKILL.md) |
@@ -350,7 +351,7 @@ Skills are automatically discovered via the `.cursor-plugin/` configuration.
    ```bash
    echo "$(npm root -g)/gmgn-skills/skills"
    ```
-3. Restart Cline — `/gmgn-token`, `/gmgn-market`, `/gmgn-portfolio`, `/gmgn-track`, `/gmgn-swap`, `/gmgn-cooking` will be available
+3. Restart Cline — `/gmgn-token`, `/gmgn-market`, `/gmgn-portfolio`, `/gmgn-wallet-score`, `/gmgn-track`, `/gmgn-swap`, `/gmgn-cooking` will be available
 
 #### Codex CLI
 
@@ -461,6 +462,13 @@ gmgn-cli market trending \
   --order-by volume --limit 20 \
   --filter not_risk --filter not_honeypot
 
+# Trending with numeric range filters (min_*/max_* are forwarded as query params)
+gmgn-cli market trending \
+  --chain sol --interval 1h \
+  --min-liquidity 10000 --max-liquidity 1000000 \
+  --max-created 30m --min-smart-degen-count 1 \
+  --order-by volume --limit 30
+
 gmgn-cli market trenches \
   --chain sol \
   --type new_creation --type near_completion --type completed \
@@ -478,6 +486,16 @@ gmgn-cli market signal --chain sol --signal-type 12 --raw
 # Token signals — multi-group: smart money OR large buys in parallel
 gmgn-cli market signal --chain sol \
   --groups '[{"signal_type":[12]},{"signal_type":[14,16]}]' --raw
+
+# Hot searches — most-searched tokens (default 7-chain set, 24h)
+gmgn-cli market hot-searches --raw
+
+# Hot searches — SOL only, 1h window, top 50
+gmgn-cli market hot-searches --chain sol --interval 1h --limit 50 --raw
+
+# Hot searches — SOL with range filters (same metric names as trending)
+gmgn-cli market hot-searches --chain sol --interval 1h \
+  --min-liquidity 10000 --min-smart-degen-count 1 --raw
 ```
 
 ### Portfolio
@@ -505,6 +523,9 @@ gmgn-cli portfolio created-tokens --chain sol --wallet <addr>
 ### Track
 
 ```bash
+# Followed token map for a wallet
+gmgn-cli track follow-tokens --chain sol --wallet <wallet_address>
+
 # Follow-wallet trade records
 gmgn-cli track follow-wallet --chain sol
 gmgn-cli track follow-wallet --chain sol --limit 20 --min-amount-usd 1000
@@ -519,6 +540,8 @@ gmgn-cli track smartmoney --chain sol --side sell --limit 50 --raw
 ```
 
 ### Swap / Quote / Query
+
+> **Human confirmation is enforced in code.** `swap`, `multi-swap`, `order strategy create`, and `cooking create` prompt for a typed `yes` on the terminal before executing. For non-interactive/automated use you must both set `GMGN_ALLOW_AUTOMATED_TRADES=1` in your shell and pass `--yes`; `--yes` alone is rejected. This guards against an AI agent being tricked (e.g. by malicious token metadata) into placing a trade without you.
 
 ```bash
 # Submit swap with fixed slippage
@@ -706,9 +729,11 @@ gmgn-cli cooking \
 
 | Commands | Chains | Chain Currencies |
 |----------|--------|-----------------|
-| token / market / portfolio / track | `sol` / `bsc` / `base` / `eth` | — |
-| swap / order | `sol` / `bsc` / `base` / `eth` | sol: SOL, USDC · bsc: BNB, USDC · base: ETH, USDC · eth: ETH |
-| gas-price | `sol` / `bsc` / `base` / `eth` | — |
+| token / market / portfolio / track | `sol` / `bsc` / `base` / `eth` / `robinhood` / `arc` / `stable` | — |
+| swap / order | `sol` / `bsc` / `base` / `eth` / `robinhood` / `arc` / `stable` | sol: SOL, USDC · bsc: BNB, USDC · base: ETH, USDC · eth: ETH |
+| gas-price | `sol` / `bsc` / `base` / `eth` / `robinhood` / `arc` / `stable` | — |
+| track kol / track smartmoney · market signal | `sol` / `bsc` / `base` / `eth` / `robinhood` / `arc` / `stable` (kol/smartmoney) · `sol` / `bsc` / `robinhood` / `arc` / `stable` (signal) | — |
+| cooking create | `sol` / `bsc` / `base` / `robinhood` | — |
 
 ---
 

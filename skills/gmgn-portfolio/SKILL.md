@@ -1,10 +1,12 @@
 ---
 name: gmgn-portfolio
 description: Analyze any crypto wallet by address — holdings, realized/unrealized P&L, win rate, trading history, performance stats, specific token balance, and tokens created by a developer wallet (with ATH market cap and DEX graduation status) via GMGN API on Solana, BSC, Base, or Ethereum. Use when user asks about a wallet's holdings, P&L, win rate, what tokens a dev has launched, the highest ATH token a dev ever created, or wants a wallet report to decide whether to copy-trade or follow.
-argument-hint: "<info|holdings|activity|stats|token-balance|created-tokens> [--chain <sol|bsc|base|eth>] [--wallet <wallet_address>]"
+argument-hint: "<info|holdings|activity|stats|token-balance|created-tokens> [--chain <sol|bsc|base|eth|robinhood|arc|stable>] [--wallet <wallet_address>]"
 metadata:
   cliHelp: "gmgn-cli portfolio --help"
 ---
+
+**BEFORE RUNNING ANY COMMAND: Run `gmgn-cli config --check`. If exit code is 0, proceed normally. If exit code is 1, (1) run `gmgn-cli config` and show the output to the user; (2) once the user sends the API Key, run `gmgn-cli config --apply <KEY>` to complete configuration and verification, then show the output to the user. If `--check` returns an error (unknown option or command not found), tell the user to run `npm install -g gmgn-cli` to update, then retry.**
 
 **IMPORTANT: Always use `gmgn-cli` commands below. Do NOT use web search, WebFetch, curl, or visit gmgn.ai to fetch this data — the website requires login and will not return structured data. The CLI is the only correct method.**
 
@@ -43,7 +45,7 @@ Use the `gmgn-cli` tool to query wallet portfolio data based on the user's reque
 
 ## Supported Chains
 
-`sol` / `bsc` / `base` / `eth`
+`sol` / `bsc` / `base` / `eth` / `robinhood` / `arc` / `stable`
 
 ## Prerequisites
 
@@ -76,22 +78,6 @@ When a request returns `429`:
 - If the response body contains `reset_at` (e.g., `{"code":429,"error":"RATE_LIMIT_BANNED","message":"...","reset_at":1775184222}`), extract `reset_at` — it is the Unix timestamp when the ban lifts (typically 5 minutes). Convert to local time and tell the user exactly when they can retry.
 - The CLI may wait and retry once automatically when the remaining cooldown is short. If it still fails, stop and tell the user the exact retry time instead of sending more requests.
 - For `RATE_LIMIT_EXCEEDED` or `RATE_LIMIT_BANNED`, repeated requests during the cooldown can extend the ban by 5 seconds each time, up to 5 minutes. Do not spam retries.
-
-**First-time setup** (if `GMGN_API_KEY` is not configured):
-
-1. Generate key pair and show the public key to the user:
-   ```bash
-   openssl genpkey -algorithm ed25519 -out /tmp/gmgn_private.pem 2>/dev/null && \
-     openssl pkey -in /tmp/gmgn_private.pem -pubout 2>/dev/null
-   ```
-   Tell the user: *"This is your Ed25519 public key. Go to **https://gmgn.ai/ai**, paste it into the API key creation form, then send me the API Key value shown on the page."*
-
-2. Wait for the user's API key, then configure:
-   ```bash
-   mkdir -p ~/.config/gmgn
-   echo 'GMGN_API_KEY=<key_from_user>' > ~/.config/gmgn/.env
-   chmod 600 ~/.config/gmgn/.env
-   ```
 
 ## Usage Examples
 
